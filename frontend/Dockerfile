@@ -9,6 +9,9 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Set Docker build environment
+ENV DOCKER_BUILD=true
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
