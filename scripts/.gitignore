@@ -1,0 +1,48 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Local configuration
+local_config.py
+config_local.py
+
+# Hedera private keys and sensitive data
+*.privatekey
+hedera-*.json
+operator-*.json
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime files
+*.pid
+
+# Test outputs
+test_results/
+test_output/
+
+# Local development
+local/
+.local/
