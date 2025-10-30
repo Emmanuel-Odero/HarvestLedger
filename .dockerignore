@@ -1,0 +1,117 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+CONTRIBUTING*
+
+# Environment files
+.env*
+!.env.example
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Dependencies (will be installed in container)
+node_modules/
+__pycache__/
+*.py[cod]
+
+# Build artifacts
+build/
+dist/
+out/
+.next/
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.*
+*.spec.*
+coverage/
+
+# Cache
+.cache/
+.npm/
+.yarn/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Local development
+.local/
+local/
+
+# Backup files
+*.bak
+*.backup
+
+# Database files
+*.db
+*.sqlite*
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Scripts (unless needed)
+scripts/
+!scripts/entrypoint.sh
+!scripts/start.sh
+
+# Configuration
+nginx/
+pgadmin/
+
+# Python virtual environments
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter notebooks
+*.ipynb
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# MyPy
+.mypy_cache/
+
+# Pytest
+.pytest_cache/
