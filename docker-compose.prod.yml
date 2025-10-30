@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16
@@ -46,11 +44,14 @@ services:
     container_name: harvest_frontend_prod
     environment:
       - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
       - NEXT_PUBLIC_GRAPHQL_URL=http://backend:8000/graphql
+      - NODE_ENV=production
     env_file:
       - .env
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - harvest_network_prod
 
