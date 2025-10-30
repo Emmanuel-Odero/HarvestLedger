@@ -22,8 +22,10 @@ except ImportError:
     
     # Mock implementations for Docker environment
     class MockClient:
-        def forTestnet(self): return self
-        def forMainnet(self): return self
+        @classmethod
+        def forTestnet(cls): return cls()
+        @classmethod
+        def forMainnet(cls): return cls()
         def setOperator(self, account_id, private_key): pass
         def close(self): pass
     
