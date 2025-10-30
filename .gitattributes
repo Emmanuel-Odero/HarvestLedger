@@ -1,0 +1,131 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.sol text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+
+# Web files
+*.html text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+
+# Configuration files
+*.env text eol=lf
+*.env.* text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.dockerignore text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Documentation
+*.txt text eol=lf
+*.rst text eol=lf
+LICENSE text eol=lf
+CHANGELOG text eol=lf
+README text eol=lf
+
+# SQL files
+*.sql text eol=lf
+
+# Lock files
+package-lock.json text eol=lf linguist-generated=true
+yarn.lock text eol=lf linguist-generated=true
+Pipfile.lock text eol=lf linguist-generated=true
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.tgz binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Archives
+*.7z binary
+*.gz binary
+*.rar binary
+*.tar binary
+*.zip binary
+
+# Database files
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Certificates
+*.pem binary
+*.key binary
+*.crt binary
+*.p12 binary
+*.pfx binary
+
+# Exclude files from export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+.dockerignore export-ignore
+.github/ export-ignore
+.vscode/ export-ignore
+.idea/ export-ignore
+*.md export-ignore
+LICENSE export-ignore
+CHANGELOG export-ignore
+
+# Language detection overrides
+*.sol linguist-language=Solidity
+*.py linguist-language=Python
+*.js linguist-language=JavaScript
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+
+# Generated files
+frontend/src/generated/* linguist-generated=true
+backend/alembic/versions/*.py linguist-generated=true
+contracts/artifacts/* linguist-generated=true
+*.min.js linguist-generated=true
+*.min.css linguist-generated=true
+
+# Diff settings for specific files
+*.json diff=json
+*.py diff=python
+*.js diff=javascript
+*.ts diff=typescript
+*.sol diff=solidity
+
+# Merge settings
+*.json merge=ours
+package-lock.json merge=ours
+yarn.lock merge=ours
+Pipfile.lock merge=ours
