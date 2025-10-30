@@ -8,6 +8,9 @@ from app.core.database import engine, Base, get_db
 from app.api.routes import health, email
 from app.core.hedera import hedera_client
 
+# Import all models to register them with SQLAlchemy Base
+from app.models import user, harvest, loan, transaction
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
