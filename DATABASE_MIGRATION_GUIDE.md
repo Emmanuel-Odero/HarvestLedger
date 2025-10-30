@@ -7,6 +7,7 @@ Your database tables have been successfully created and are ready for use!
 ## 📋 Available Database Commands
 
 ### Core Migration Commands
+
 ```bash
 # Create all database tables (MAIN COMMAND)
 make db-create-tables
@@ -19,6 +20,7 @@ make db-migrate
 ```
 
 ### Database Status & Inspection
+
 ```bash
 # Check database connection and table status
 make db-status
@@ -34,6 +36,7 @@ make exec-db
 ```
 
 ### Data Management
+
 ```bash
 # Seed database with sample data
 make db-seed
@@ -46,6 +49,7 @@ make db-restore BACKUP_FILE=backups/backup_20241031_123456.sql
 ```
 
 ### Advanced Operations (⚠️ Destructive)
+
 ```bash
 # Reset entire database (destroys all data)
 make db-reset
@@ -57,12 +61,14 @@ make db-recreate
 ## 🗄️ Current Database Schema
 
 ### Tables Created:
+
 1. **users** - User accounts (farmers, buyers, admins)
 2. **harvests** - Crop harvest records
 3. **loans** - Agricultural financing
 4. **transactions** - Blockchain transaction records
 
 ### Enums Created:
+
 - `user_role` (farmer, buyer, admin)
 - `harvest_status` (planted, growing, harvested, tokenized, sold)
 - `loan_status` (pending, approved, active, repaid, defaulted)
