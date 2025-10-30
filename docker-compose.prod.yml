@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: harvest_db_prod
+    environment:
+      POSTGRES_DB: harvest_ledger
+      POSTGRES_USER: harvest_user
+      POSTGRES_PASSWORD: harvest_pass
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - harvest_network_prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harvest_user -d harvest_ledger"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: harvest_backend_prod
+    environment:
+      - DATABASE_URL=postgresql://harvest_user:harvest_pass@db:5432/harvest_ledger
+    env_file:
+      - .env
+    networks:
+      - harvest_network_prod
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: harvest_frontend_prod
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_GRAPHQL_URL=http://backend:8000/graphql
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    networks:
+      - harvest_network_prod
+
+  nginx:
+    image: nginx:alpine
+    container_name: harvest_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - harvest_network_prod
+
+networks:
+  harvest_network_prod:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:
