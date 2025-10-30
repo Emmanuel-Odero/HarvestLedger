@@ -15,9 +15,10 @@ Vercel should auto-detect Next.js, but verify these settings:
 
 - **Framework Preset**: Next.js
 - **Root Directory**: `frontend`
-- **Build Command**: `npm run build:vercel` (or leave default)
-- **Output Directory**: `.next` (default)
+- **Build Command**: `npm run build:vercel`
+- **Output Directory**: Leave empty (auto-detected)
 - **Install Command**: `npm install` (default)
+- **Node.js Version**: 18.x (recommended)
 
 ### Step 3: Set Environment Variables
 
