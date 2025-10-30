@@ -1,0 +1,71 @@
+# Compiled contracts
+*.bin
+*.abi
+build/
+artifacts/
+
+# Node modules (if using Hardhat/Truffle)
+node_modules/
+
+# Cache
+cache/
+.cache/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+
+# Deployment artifacts
+deployments/
+deployed_contracts.json
+
+# Test outputs
+coverage/
+coverage.json
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# Local development
+local/
+.local/
+
+# Hardhat
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# Truffle
+build/
+
+# Foundry
+out/
+cache/
+broadcast/
+
+# Remix IDE
+.deps/
+
+# Solidity coverage
+coverage/
+coverage.json
+.coverage_artifacts/
+.coverage_cache/
+.coverage_contracts/
