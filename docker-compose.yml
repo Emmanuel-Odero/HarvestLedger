@@ -1,0 +1,112 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16
+    container_name: harvest_db
+    environment:
+      POSTGRES_DB: harvest_ledger
+      POSTGRES_USER: harvest_user
+      POSTGRES_PASSWORD: harvest_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - harvest_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harvest_user -d harvest_ledger"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: harvest_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@harvest.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - harvest_network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: harvest_mailhog
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    networks:
+      - harvest_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: harvest_backend
+    environment:
+      - DATABASE_URL=postgresql://harvest_user:harvest_pass@db:5432/harvest_ledger
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_USER=
+      - SMTP_PASSWORD=
+      - SMTP_TLS=false
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    networks:
+      - harvest_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: harvest_frontend
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+      - NEXT_PUBLIC_GRAPHQL_URL=http://localhost:8000/graphql
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - harvest_network
+    command: npm run dev
+
+networks:
+  harvest_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pgadmin_data:
