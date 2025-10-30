@@ -332,6 +332,36 @@ db-backup: ## Backup database
 	@docker compose exec db pg_dump -U harvest_user harvest_ledger > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
 	@echo "$(GREEN)✅ Database backup created!$(RESET)"
 
+db-create-tables: ## Create all database tables from SQLAlchemy models
+	@echo "$(BLUE)🗄️  Creating database tables...$(RESET)"
+	@docker compose exec backend python -c "from app.core.database import engine, Base; from app.models import user, harvest, loan, transaction; Base.metadata.create_all(bind=engine); print('✅ All tables created successfully!')"
+	@echo "$(GREEN)✅ Database tables created!$(RESET)"
+
+db-init: ## Initialize database with tables and basic data
+	@echo "$(BLUE)🗄️  Initializing database...$(RESET)"
+	@$(MAKE) db-create-tables
+	@echo "$(YELLOW)Running initialization SQL...$(RESET)"
+	@docker compose exec db psql -U harvest_user -d harvest_ledger -f /docker-entrypoint-initdb.d/init.sql 2>/dev/null || echo "$(YELLOW)Init SQL already applied$(RESET)"
+	@echo "$(GREEN)✅ Database initialization completed!$(RESET)"
+
+db-status: ## Check database connection and table status
+	@echo "$(BLUE)🗄️  Checking database status...$(RESET)"
+	@echo "$(YELLOW)Database connection:$(RESET)"
+	@docker compose exec db pg_isready -U harvest_user -d harvest_ledger
+	@echo "$(YELLOW)Existing tables:$(RESET)"
+	@docker compose exec db psql -U harvest_user -d harvest_ledger -c "\dt"
+
+db-tables: ## List all database tables
+	@echo "$(BLUE)🗄️  Database tables:$(RESET)"
+	@docker compose exec db psql -U harvest_user -d harvest_ledger -c "\dt"
+
+db-schema: ## Show database schema for all tables
+	@echo "$(BLUE)🗄️  Database schema:$(RESET)"
+	@docker compose exec db psql -U harvest_user -d harvest_ledger -c "\d+ users" 2>/dev/null || echo "$(YELLOW)users table not found$(RESET)"
+	@docker compose exec db psql -U harvest_user -d harvest_ledger -c "\d+ harvests" 2>/dev/null || echo "$(YELLOW)harvests table not found$(RESET)"
+	@docker compose exec db psql -U harvest_user -d harvest_ledger -c "\d+ loans" 2>/dev/null || echo "$(YELLOW)loans table not found$(RESET)"
+	@docker compose exec db psql -U harvest_user -d harvest_ledger -c "\d+ transactions" 2>/dev/null || echo "$(YELLOW)transactions table not found$(RESET)"
+
 ##@ Development Tools
 shell-backend: ## Open shell in backend container
 	@docker compose exec backend bash
