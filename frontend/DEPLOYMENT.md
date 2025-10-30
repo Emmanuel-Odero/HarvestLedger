@@ -22,10 +22,20 @@ This frontend is configured for dual deployment: **Vercel for production** and *
    ```
 
 2. **Configure Environment Variables in Vercel Dashboard**
+   
+   Go to your Vercel project → Settings → Environment Variables and add:
+   
+   | Variable Name | Value | Environment |
+   |---------------|-------|-------------|
+   | `NEXT_PUBLIC_BACKEND_URL` | `https://your-backend-domain.com` | Production, Preview, Development |
+   | `NEXT_PUBLIC_GRAPHQL_URL` | `https://your-backend-domain.com/graphql` | Production, Preview, Development |
+   | `BACKEND_URL` | `https://your-backend-domain.com` | Production, Preview, Development |
+   
+   **Example values:**
    ```
-   NEXT_PUBLIC_BACKEND_URL=https://your-backend-domain.com
-   NEXT_PUBLIC_GRAPHQL_URL=https://your-backend-domain.com/graphql
-   BACKEND_URL=https://your-backend-domain.com
+   NEXT_PUBLIC_BACKEND_URL=https://api.harvestledger.com
+   NEXT_PUBLIC_GRAPHQL_URL=https://api.harvestledger.com/graphql
+   BACKEND_URL=https://api.harvestledger.com
    ```
 
 3. **Build Configuration**

@@ -1,22 +1,10 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:vercel",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "functions": {
     "src/app/api/**/*.ts": {
       "runtime": "nodejs18.x"
-    }
-  },
-  "env": {
-    "NEXT_PUBLIC_BACKEND_URL": "@backend-url",
-    "NEXT_PUBLIC_GRAPHQL_URL": "@graphql-url",
-    "BACKEND_URL": "@backend-url"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_BACKEND_URL": "@backend-url",
-      "NEXT_PUBLIC_GRAPHQL_URL": "@graphql-url",
-      "BACKEND_URL": "@backend-url"
     }
   },
   "headers": [
