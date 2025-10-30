@@ -30,7 +30,7 @@ See [HEDERA_SETUP.md](HEDERA_SETUP.md) for detailed instructions.
 
 ### Option 1: Automated Setup (Recommended)
 ```bash
-git clone <repository>
+git clone https://github.com/Emmanuel-Odero/HarvestLedger.git
 cd harvest-ledger
 
 # Complete automated setup
