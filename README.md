@@ -144,10 +144,26 @@ npm run dev
 
 ## Production Deployment
 
+### Full Stack Deployment (Docker)
 Use the production docker-compose configuration:
 ```bash
 docker-compose -f docker-compose.prod.yml up --build
 ```
+
+### Frontend-Only Deployment (Netlify)
+For deploying just the frontend to Netlify while using a separate backend:
+
+```bash
+# Test the build locally
+./scripts/build-netlify.sh
+
+# Deploy to Netlify
+# 1. Push to GitHub
+# 2. Connect repository to Netlify
+# 3. Configure build settings (see NETLIFY_DEPLOYMENT.md)
+```
+
+**📖 See [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md) for complete Netlify setup guide**
 
 ## Key Features
 
