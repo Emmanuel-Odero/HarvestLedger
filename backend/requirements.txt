@@ -20,7 +20,7 @@ cryptography==41.0.7
 # Request handling
 python-multipart==0.0.6
 
-# Hedera Blockchain SDK
+# Hedera Blockchain SDK - OFFICIAL
 hedera-sdk-py==2.50.0
 web3==6.11.3
 
@@ -76,3 +76,10 @@ gunicorn==21.2.0
 click==8.1.7  # For CLI commands
 rich==13.7.0  # For better console output
 typer==0.9.0  # For CLI interface
+
+# Redis for nonce caching
+redis==5.0.1
+
+# Additional crypto utilities
+eth-account==0.9.0
+eth-utils==2.3.0

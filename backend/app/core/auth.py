@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -65,18 +65,54 @@ async def get_current_user(
         if payload is None:
             raise credentials_exception
             
+        # Support both user_id (legacy) and hedera_account_id (new wallet auth)
         user_id: str = payload.get("sub")
-        if user_id is None:
+        hedera_account_id: str = payload.get("hedera_account_id")
+        
+        if not user_id and not hedera_account_id:
             raise credentials_exception
             
     except JWTError:
         raise credentials_exception
     
-    user = db.query(User).filter(User.id == user_id).first()
+    # Try to find user by hedera_account_id first (wallet auth), then by user_id (legacy)
+    user = None
+    if hedera_account_id:
+        user = db.query(User).filter(User.hedera_account_id == hedera_account_id).first()
+    elif user_id:
+        user = db.query(User).filter(User.id == user_id).first()
+    
     if user is None:
         raise credentials_exception
         
     return user
+
+async def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """Get the current user if authenticated, otherwise return None"""
+    try:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return None
+        
+        token = auth_header.split(" ")[1]
+        payload = verify_token(token)
+        if payload is None:
+            return None
+            
+        hedera_account_id: str = payload.get("hedera_account_id")
+        user_id: str = payload.get("sub")
+        
+        if hedera_account_id:
+            return db.query(User).filter(User.hedera_account_id == hedera_account_id).first()
+        elif user_id:
+            return db.query(User).filter(User.id == user_id).first()
+            
+        return None
+    except:
+        return None
 
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:

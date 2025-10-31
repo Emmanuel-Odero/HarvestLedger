@@ -12,12 +12,25 @@ from app.models.harvest import Harvest as HarvestModel
 from app.models.loan import Loan as LoanModel
 from app.models.transaction import Transaction as TransactionModel, TransactionType
 from app.graphql.types import (
-    User, Harvest, Loan, Transaction, AuthPayload, HederaTopicMessage, TokenInfo,
-    UserInput, HarvestInput, LoanInput, LoginInput
+    User, Harvest, Loan, Transaction, AuthResponse, HederaTopicMessage, TokenInfo,
+    UserInput, HarvestInput, LoanInput, LoginInput, WalletAuthPayload
 )
+from app.core.wallet_auth import WalletAuthenticator
+from app.models.user import UserRole
 
 @strawberry.type
 class Query:
+    
+    @strawberry.field
+    async def get_auth_message(self, address: str) -> str:
+        """Generate SIWE-style authentication message for wallet signing"""
+        nonce = WalletAuthenticator.generate_nonce()
+        message = WalletAuthenticator.create_siwe_message(address, nonce)
+        
+        # Store nonce in Redis
+        await WalletAuthenticator.store_nonce(nonce, address)
+        
+        return message
     
     @strawberry.field
     async def me(self) -> Optional[User]:
@@ -184,8 +197,81 @@ class Query:
 class Mutation:
     
     @strawberry.mutation
-    async def register(self, user_input: UserInput) -> AuthPayload:
-        """Register a new user"""
+    async def authenticate_wallet(self, input: WalletAuthPayload) -> AuthResponse:
+        """Authenticate user with wallet signature"""
+        db = SessionLocal()
+        
+        try:
+            # Verify wallet signature
+            is_valid, hedera_account_id = await WalletAuthenticator.authenticate_wallet(
+                address=input.address,
+                signature=input.signature,
+                message=input.message,
+                wallet_type=input.wallet_type.value,
+                public_key=input.public_key
+            )
+            
+            if not is_valid or not hedera_account_id:
+                raise HTTPException(status_code=401, detail="Invalid wallet signature")
+            
+            # Find or create user
+            user = db.query(UserModel).filter(UserModel.hedera_account_id == hedera_account_id).first()
+            
+            if not user:
+                # Create new user with wallet authentication
+                # Infer role based on wallet activity (simplified logic)
+                role = UserRole.FARMER  # Default to farmer, could be enhanced with on-chain analysis
+                
+                user = UserModel(
+                    hedera_account_id=hedera_account_id,
+                    wallet_type=input.wallet_type.value,
+                    role=role,
+                    is_active=True,
+                    is_verified=False
+                )
+                
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+            
+            # Create JWT token
+            token_data = {
+                "sub": str(user.id),
+                "hedera_account_id": user.hedera_account_id,
+                "wallet_type": user.wallet_type
+            }
+            access_token = create_access_token(data=token_data)
+            
+            # Determine redirect URL based on user state
+            redirect_url = "/dashboard"
+            if not user.full_name:  # New user needs onboarding
+                redirect_url = "/onboarding"
+            
+            return AuthResponse(
+                token=access_token,
+                user=User(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    role=user.role,
+                    hedera_account_id=user.hedera_account_id,
+                    wallet_type=user.wallet_type,
+                    phone=user.phone,
+                    address=user.address,
+                    farm_name=user.farm_name,
+                    company_name=user.company_name,
+                    is_active=user.is_active,
+                    is_verified=user.is_verified,
+                    created_at=user.created_at
+                ),
+                redirect_url=redirect_url
+            )
+        finally:
+            db.close()
+    
+    @strawberry.mutation
+    async def register(self, user_input: UserInput) -> AuthResponse:
+        """Register a new user (legacy email/password - deprecated)"""
         db = SessionLocal()
         
         # Check if user already exists
@@ -203,7 +289,8 @@ class Mutation:
             phone=user_input.phone,
             address=user_input.address,
             farm_name=user_input.farm_name,
-            company_name=user_input.company_name
+            company_name=user_input.company_name,
+            hedera_account_id=f"legacy_{user_input.email}"  # Placeholder for legacy users
         )
         
         try:
@@ -214,15 +301,15 @@ class Mutation:
             # Create access token
             access_token = create_access_token(data={"sub": str(user.id)})
             
-            return AuthPayload(
-                access_token=access_token,
-                token_type="bearer",
+            return AuthResponse(
+                token=access_token,
                 user=User(
                     id=user.id,
                     email=user.email,
                     full_name=user.full_name,
                     role=user.role,
                     hedera_account_id=user.hedera_account_id,
+                    wallet_type=user.wallet_type,
                     phone=user.phone,
                     address=user.address,
                     farm_name=user.farm_name,
@@ -230,14 +317,15 @@ class Mutation:
                     is_active=user.is_active,
                     is_verified=user.is_verified,
                     created_at=user.created_at
-                )
+                ),
+                redirect_url="/dashboard"
             )
         finally:
             db.close()
     
     @strawberry.mutation
-    async def login(self, login_input: LoginInput) -> AuthPayload:
-        """Login user"""
+    async def login(self, login_input: LoginInput) -> AuthResponse:
+        """Login user (legacy email/password - deprecated)"""
         db = SessionLocal()
         
         try:
@@ -247,15 +335,15 @@ class Mutation:
             
             access_token = create_access_token(data={"sub": str(user.id)})
             
-            return AuthPayload(
-                access_token=access_token,
-                token_type="bearer",
+            return AuthResponse(
+                token=access_token,
                 user=User(
                     id=user.id,
                     email=user.email,
                     full_name=user.full_name,
                     role=user.role,
                     hedera_account_id=user.hedera_account_id,
+                    wallet_type=user.wallet_type,
                     phone=user.phone,
                     address=user.address,
                     farm_name=user.farm_name,
@@ -263,7 +351,8 @@ class Mutation:
                     is_active=user.is_active,
                     is_verified=user.is_verified,
                     created_at=user.created_at
-                )
+                ),
+                redirect_url="/dashboard"
             )
         finally:
             db.close()

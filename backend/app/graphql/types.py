@@ -41,21 +41,30 @@ class TransactionType(str, Enum):
     PAYMENT = "payment"
     TRANSFER = "transfer"
 
+class WalletType(str, Enum):
+    HASHPACK = "HASHPACK"
+    BLADE = "BLADE"
+    KABILA = "KABILA"
+    METAMASK = "METAMASK"
+    PORTAL = "PORTAL"
+
 # Convert to Strawberry enums
 UserRole = strawberry.enum(UserRole)
 HarvestStatus = strawberry.enum(HarvestStatus)
 CropType = strawberry.enum(CropType)
 LoanStatus = strawberry.enum(LoanStatus)
 TransactionType = strawberry.enum(TransactionType)
+WalletType = strawberry.enum(WalletType)
 
 
 @strawberry.type
 class User:
     id: uuid.UUID
-    email: str
-    full_name: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
     role: UserRole
-    hedera_account_id: Optional[str] = None
+    hedera_account_id: str
+    wallet_type: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
     farm_name: Optional[str] = None
@@ -131,10 +140,10 @@ class Transaction:
 
 
 @strawberry.type
-class AuthPayload:
-    access_token: str
-    token_type: str
+class AuthResponse:
+    token: str
     user: User
+    redirect_url: str
 
 
 @strawberry.type
@@ -195,3 +204,11 @@ class LoanInput:
 class LoginInput:
     email: str
     password: str
+
+@strawberry.input
+class WalletAuthPayload:
+    address: str
+    signature: str
+    message: str
+    wallet_type: WalletType
+    public_key: Optional[str] = None

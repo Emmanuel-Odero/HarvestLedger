@@ -36,6 +36,19 @@ services:
     networks:
       - harvest_network
 
+  redis:
+    image: redis:7-alpine
+    container_name: harvest_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - harvest_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   mailhog:
     image: mailhog/mailhog:latest
     container_name: harvest_mailhog
@@ -52,6 +65,7 @@ services:
     container_name: harvest_backend
     environment:
       - DATABASE_URL=postgresql://harvest_user:harvest_pass@db:5432/harvest_ledger
+      - REDIS_URL=redis://redis:6379
       - SMTP_HOST=mailhog
       - SMTP_PORT=1025
       - SMTP_USER=
@@ -66,6 +80,8 @@ services:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       mailhog:
         condition: service_started

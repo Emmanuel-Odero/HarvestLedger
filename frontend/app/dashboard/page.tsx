@@ -1,227 +1,146 @@
 'use client';
 
-import { useQuery, gql } from '@apollo/client';
+import { useAuth } from '@/lib/auth-context'
+import { useMutation } from '@apollo/client'
+import { RECORD_HARVEST } from '@/lib/graphql/auth'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { env, debugEnv } from "@/lib/env";
-import { useEffect } from 'react';
-
-// GraphQL Queries
-const GET_HARVESTS = gql`
-  query GetHarvests {
-    harvests {
-      id
-      cropType
-      quantity
-      quality
-      harvestDate
-      location
-      farmer {
-        name
-        email
-      }
-    }
-  }
-`;
-
-const GET_HEALTH_STATUS = gql`
-  query GetHealthStatus {
-    health {
-      status
-      database
-      hedera
-      timestamp
-    }
-  }
-`;
 
 export default function Dashboard() {
-  const { loading: harvestsLoading, error: harvestsError, data: harvestsData } = useQuery(GET_HARVESTS);
-  const { loading: healthLoading, error: healthError, data: healthData } = useQuery(GET_HEALTH_STATUS);
+  const { user, logout } = useAuth()
+  const [recordHarvest] = useMutation(RECORD_HARVEST)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
-  // Debug environment variables on component mount
-  useEffect(() => {
-    debugEnv();
-  }, []);
+  const handleTestHarvest = async () => {
+    try {
+      setLoading(true)
+      setMessage('')
+      
+      const { data } = await recordHarvest({
+        variables: {
+          input: {
+            cropType: 'CORN',
+            quantity: 100,
+            unit: 'tons',
+            farmLocation: 'Test Farm Location',
+            organicCertified: false
+          }
+        }
+      })
+      
+      if (data?.recordHarvest) {
+        setMessage(`Harvest recorded successfully! HCS Transaction ID: ${data.recordHarvest.hcsTransactionId}`)
+      }
+    } catch (error) {
+      setMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">HarvestLedger Dashboard</h1>
-          <p className="text-gray-600">Monitor your agricultural supply chain in real-time</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="bg-white shadow rounded-lg mb-6">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome to HarvestLedger Dashboard
+                </h1>
+                <p className="text-gray-600 mt-2">
+                  Connected with {user?.walletType} wallet: {user?.hederaAccountId}
+                </p>
+              </div>
+              <Button
+                onClick={logout}
+                variant="destructive"
+              >
+                Logout
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Health Status */}
-        <div className="mb-8">
+        {/* User Info */}
+        <div className="mb-6">
           <Card>
             <CardHeader>
-              <CardTitle>System Health</CardTitle>
-              <CardDescription>Backend connectivity and service status</CardDescription>
+              <CardTitle>Account Information</CardTitle>
+              <CardDescription>Your wallet and account details</CardDescription>
             </CardHeader>
             <CardContent>
-              {healthLoading && <p>Checking system health...</p>}
-              {healthError && (
-                <div className="text-red-600">
-                  <p>Health check failed: {healthError.message}</p>
-                  <Badge variant="destructive">Offline</Badge>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Hedera Account ID</label>
+                  <p className="mt-1 text-sm text-gray-900">{user?.hederaAccountId}</p>
                 </div>
-              )}
-              {healthData && (
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Badge variant={healthData.health.status === 'healthy' ? 'default' : 'destructive'}>
-                      {healthData.health.status}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Wallet Type</label>
+                  <p className="mt-1 text-sm text-gray-900">{user?.walletType}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Role</label>
+                  <p className="mt-1 text-sm text-gray-900">{user?.role}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <div className="mt-1 flex space-x-2">
+                    <Badge variant={user?.isActive ? 'default' : 'destructive'}>
+                      {user?.isActive ? 'Active' : 'Inactive'}
                     </Badge>
-                    <span className="text-sm text-gray-600">
-                      Last checked: {new Date(healthData.health.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <p className="text-sm font-medium">Database</p>
-                      <Badge variant={healthData.health.database ? 'default' : 'destructive'}>
-                        {healthData.health.database ? 'Connected' : 'Disconnected'}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Hedera Network</p>
-                      <Badge variant={healthData.health.hedera ? 'default' : 'destructive'}>
-                        {healthData.health.hedera ? 'Connected' : 'Disconnected'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Harvests Data */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Harvests</CardTitle>
-              <CardDescription>Latest harvest records from the blockchain</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {harvestsLoading && <p>Loading harvests...</p>}
-              {harvestsError && (
-                <div className="text-red-600">
-                  <p>Failed to load harvests: {harvestsError.message}</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2"
-                    onClick={() => window.location.reload()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              )}
-              {harvestsData && (
-                <div className="space-y-4">
-                  {harvestsData.harvests.length === 0 ? (
-                    <p className="text-gray-500">No harvests recorded yet</p>
-                  ) : (
-                    harvestsData.harvests.map((harvest: any) => (
-                      <div key={harvest.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium">{harvest.cropType}</h4>
-                          <Badge>{harvest.quality}</Badge>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          Quantity: {harvest.quantity} | Location: {harvest.location}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Farmer: {harvest.farmer.name} | Date: {new Date(harvest.harvestDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common tasks and operations</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button className="w-full" variant="outline">
-                Record New Harvest
-              </Button>
-              <Button className="w-full" variant="outline">
-                View Supply Chain
-              </Button>
-              <Button className="w-full" variant="outline">
-                Generate Reports
-              </Button>
-              <Button className="w-full" variant="outline">
-                Manage Farmers
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* API Test Section */}
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Connection Test</CardTitle>
-              <CardDescription>Test direct backend connectivity</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button 
-                  onClick={async () => {
-                    try {
-                      const response = await fetch(env.getProxyUrl('/health'));
-                      const data = await response.json();
-                      alert(`Backend Response: ${JSON.stringify(data, null, 2)}`);
-                    } catch (error) {
-                      alert(`Error: ${error}`);
-                    }
-                  }}
-                  variant="outline"
-                >
-                  Test Health Endpoint
-                </Button>
-                <Button 
-                  onClick={async () => {
-                    try {
-                      const response = await fetch(env.getProxyUrl('/graphql'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          query: '{ health { status database hedera timestamp } }'
-                        })
-                      });
-                      const data = await response.json();
-                      alert(`GraphQL Response: ${JSON.stringify(data, null, 2)}`);
-                    } catch (error) {
-                      alert(`Error: ${error}`);
-                    }
-                  }}
-                  variant="outline"
-                >
-                  Test GraphQL Endpoint
-                </Button>
-                <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                  <h4 className="font-medium mb-2">Environment Info:</h4>
-                  <div className="text-sm space-y-1">
-                    <p><strong>Backend URL:</strong> {env.BACKEND_URL}</p>
-                    <p><strong>GraphQL URL:</strong> {env.GRAPHQL_URL}</p>
-                    <p><strong>Environment:</strong> {env.NODE_ENV}</p>
+                    <Badge variant={user?.isVerified ? 'default' : 'secondary'}>
+                      {user?.isVerified ? 'Verified' : 'Unverified'}
+                    </Badge>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Test Harvest Recording */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Test Blockchain Integration</CardTitle>
+            <CardDescription>
+              Test the end-to-end blockchain integration by recording a harvest on Hedera testnet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleTestHarvest}
+              disabled={loading}
+              className="mb-4"
+            >
+              {loading ? 'Recording Harvest...' : 'Record Test Harvest'}
+            </Button>
+            
+            {message && (
+              <div className={`p-4 rounded-lg ${
+                message.includes('Error') 
+                  ? 'bg-red-50 text-red-700 border border-red-200' 
+                  : 'bg-green-50 text-green-700 border border-green-200'
+              }`}>
+                {message}
+              </div>
+            )}
+            
+            <div className="mt-4 text-sm text-gray-500">
+              <p className="font-medium mb-2">This will:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Create a harvest record in the database</li>
+                <li>Submit a message to Hedera Consensus Service (HCS)</li>
+                <li>Return a transaction ID that can be verified on the Hedera testnet mirror node</li>
+                <li>Demonstrate real blockchain integration without mocks</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
