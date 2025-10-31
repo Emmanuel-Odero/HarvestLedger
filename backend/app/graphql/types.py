@@ -71,7 +71,10 @@ class User:
     company_name: Optional[str] = None
     is_active: bool
     is_verified: bool
+    email_verified: Optional[bool] = None
+    registration_complete: Optional[bool] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 @strawberry.type
@@ -140,10 +143,69 @@ class Transaction:
 
 
 @strawberry.type
+class UserWallet:
+    id: uuid.UUID
+    wallet_address: str
+    wallet_type: str
+    is_primary: bool
+    first_used_at: datetime
+    last_used_at: datetime
+    created_at: datetime
+
+
+@strawberry.type
+class UserSession:
+    id: uuid.UUID
+    session_token: str
+    current_wallet: Optional[UserWallet] = None
+    device_fingerprint: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    screen_resolution: Optional[str] = None
+    timezone: Optional[str] = None
+    language: Optional[str] = None
+    expires_at: datetime
+    created_at: datetime
+    last_active_at: datetime
+
+
+@strawberry.type
+class WalletLinkingRequest:
+    id: uuid.UUID
+    new_wallet_address: str
+    new_wallet_type: str
+    status: str
+    expires_at: datetime
+    created_at: datetime
+
+
+@strawberry.type
 class AuthResponse:
     token: str
     user: User
     redirect_url: str
+    session_id: Optional[str] = None
+    is_new_user: bool = False
+    requires_email_verification: bool = False
+    registration_state: Optional[str] = None  # 'wallet_connected', 'email_verified', 'profile_complete', 'registration_complete'
+
+
+@strawberry.type
+class MultiWalletUser:
+    id: uuid.UUID
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    role: UserRole
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    farm_name: Optional[str] = None
+    company_name: Optional[str] = None
+    is_active: bool
+    is_verified: bool
+    created_at: datetime
+    wallets: List[UserWallet]
+    primary_wallet: Optional[UserWallet] = None
+    active_sessions: List[UserSession]
 
 
 @strawberry.type
@@ -212,3 +274,80 @@ class WalletAuthPayload:
     message: str
     wallet_type: WalletType
     public_key: Optional[str] = None
+
+
+@strawberry.input
+class DeviceInfo:
+    user_agent: Optional[str] = None
+    screen_resolution: Optional[str] = None
+    timezone: Optional[str] = None
+    language: Optional[str] = None
+    ip_address: Optional[str] = None
+    browser_signature: Optional[str] = None
+
+
+@strawberry.input
+class MultiWalletAuthPayload:
+    address: str
+    signature: str
+    message: str
+    wallet_type: WalletType
+    public_key: Optional[str] = None
+    device_info: Optional[DeviceInfo] = None
+
+
+@strawberry.input
+class WalletLinkingPayload:
+    new_wallet_address: str
+    new_wallet_type: WalletType
+    new_wallet_signature: str
+    primary_wallet_signature: str
+    message: str
+    public_key: Optional[str] = None
+
+
+@strawberry.input
+class SendOTPInput:
+    email: str
+    purpose: str = "verification"
+
+
+@strawberry.input
+class VerifyOTPInput:
+    email: str
+    otp: str
+    purpose: str = "verification"
+    wallet_address: Optional[str] = None
+    wallet_type: Optional[WalletType] = None
+
+
+@strawberry.input
+class CompleteRegistrationInput:
+    email: str
+    full_name: str
+    role: UserRole
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    farm_name: Optional[str] = None
+    company_name: Optional[str] = None
+
+
+@strawberry.type
+class OTPResponse:
+    success: bool
+    message: str
+
+@strawberry.type
+class UpdateUserResponse:
+    success: bool
+    message: str
+    user: Optional[User] = None
+
+
+@strawberry.type
+class RegistrationState:
+    wallet_connected: bool
+    email_verified: bool
+    profile_complete: bool
+    registration_complete: bool
+    next_step: Optional[str] = None

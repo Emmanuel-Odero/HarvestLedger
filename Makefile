@@ -24,6 +24,11 @@ install: ## Install dependencies
 	@cd backend && pip install -r requirements.txt
 	@echo "$(GREEN)✅ Dependencies installed$(RESET)"
 
+install-hedera: ## Install Hedera SDK specifically
+	@echo "$(BLUE)🔗 Installing Hedera SDK...$(RESET)"
+	@cd backend && pip install hedera-sdk-py
+	@echo "$(GREEN)✅ Hedera SDK installed$(RESET)"
+
 build: ## Build Docker images
 	@echo "$(BLUE)🐳 Building Docker images...$(RESET)"
 	@docker compose build
@@ -72,6 +77,11 @@ clean: ## Clean up Docker resources
 
 rebuild: clean build ## Clean rebuild of all images
 
+rebuild-hedera: ## Rebuild containers with Hedera SDK
+	@echo "$(BLUE)🔗 Rebuilding containers with Hedera SDK...$(RESET)"
+	@docker compose build --no-cache backend
+	@echo "$(GREEN)✅ Backend container rebuilt with Hedera SDK$(RESET)"
+
 ##@ Health & Testing
 health: ## Check health of running services
 	@echo "$(BLUE)🏥 Checking service health...$(RESET)"
@@ -80,6 +90,10 @@ health: ## Check health of running services
 	@echo ""
 	@echo "$(YELLOW)Frontend Health:$(RESET)"
 	@curl -s -o /dev/null -w "Status: %{http_code}\n" http://localhost:3000 || echo "$(RED)❌ Frontend not responding$(RESET)"
+
+verify-hedera: ## Verify Hedera SDK installation in container
+	@echo "$(BLUE)🔗 Verifying Hedera SDK installation...$(RESET)"
+	@docker compose exec backend python verify-hedera-sdk.py || echo "$(RED)❌ Hedera SDK verification failed$(RESET)"
 
 ##@ Database
 db-shell: ## Open PostgreSQL shell

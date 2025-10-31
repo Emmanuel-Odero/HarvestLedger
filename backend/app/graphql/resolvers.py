@@ -13,10 +13,17 @@ from app.models.loan import Loan as LoanModel
 from app.models.transaction import Transaction as TransactionModel, TransactionType
 from app.graphql.types import (
     User, Harvest, Loan, Transaction, AuthResponse, HederaTopicMessage, TokenInfo,
-    UserInput, HarvestInput, LoanInput, LoginInput, WalletAuthPayload
+    UserInput, HarvestInput, LoanInput, LoginInput, WalletAuthPayload,
+    MultiWalletUser, UserWallet, UserSession, WalletLinkingRequest,
+    MultiWalletAuthPayload, WalletLinkingPayload, DeviceInfo,
+    SendOTPInput, VerifyOTPInput, CompleteRegistrationInput, OTPResponse, RegistrationState,
+    WalletType, UserRole, UpdateUserResponse
 )
 from app.core.wallet_auth import WalletAuthenticator
-from app.models.user import UserRole
+from app.models.user import UserRole as UserRoleModel
+from app.models.user_wallet import UserWallet as UserWalletModel, UserSession as UserSessionModel
+from app.services.multi_wallet_auth import MultiWalletAuthService
+from app.services.otp_service import OTPService
 
 @strawberry.type
 class Query:
@@ -33,11 +40,31 @@ class Query:
         return message
     
     @strawberry.field
-    async def me(self) -> Optional[User]:
-        """Get current user information"""
-        # In a real implementation, you'd extract user from JWT token
-        # For now, this is a placeholder
-        return None
+    async def me(self, info) -> Optional[User]:
+        """Get current user information from JWT token"""
+        current_user = info.context.current_user
+        
+        if not current_user:
+            return None
+        
+        return User(
+            id=current_user.id,
+            email=current_user.email,
+            full_name=current_user.full_name,
+            role=current_user.role,
+            hedera_account_id=current_user.hedera_account_id,
+            wallet_type=current_user.wallet_type,
+            phone=current_user.phone,
+            address=current_user.address,
+            farm_name=current_user.farm_name,
+            company_name=current_user.company_name,
+            is_active=current_user.is_active,
+            is_verified=current_user.is_verified,
+            email_verified=current_user.email_verified,
+            registration_complete=current_user.registration_complete,
+            created_at=current_user.created_at,
+            updated_at=current_user.updated_at
+        )
     
     @strawberry.field
     async def users(self) -> List[User]:
@@ -191,6 +218,95 @@ class Query:
             total_supply=data["total_supply"],
             treasury_account_id=data["treasury_account"]["account"]
         )
+    
+    @strawberry.field
+    async def get_user_wallets(self, user_id: str) -> List[UserWallet]:
+        """Get all wallets for a user"""
+        db = SessionLocal()
+        try:
+            multi_wallet_service = MultiWalletAuthService(db)
+            wallets = multi_wallet_service.get_user_wallets(user_id)
+            
+            return [UserWallet(
+                id=wallet.id,
+                wallet_address=wallet.wallet_address,
+                wallet_type=wallet.wallet_type,
+                is_primary=wallet.is_primary,
+                first_used_at=wallet.first_used_at,
+                last_used_at=wallet.last_used_at,
+                created_at=wallet.created_at
+            ) for wallet in wallets]
+        finally:
+            db.close()
+    
+    @strawberry.field
+    async def get_multi_wallet_user(self, user_id: str) -> Optional[MultiWalletUser]:
+        """Get user with all their wallets and sessions"""
+        db = SessionLocal()
+        try:
+            user = db.query(UserModel).filter(UserModel.id == user_id).first()
+            if not user:
+                return None
+            
+            # Get wallets
+            wallets = db.query(UserWalletModel).filter(
+                UserWalletModel.user_id == user_id
+            ).order_by(UserWalletModel.is_primary.desc(), UserWalletModel.created_at).all()
+            
+            # Get active sessions
+            active_sessions = db.query(UserSessionModel).filter(
+                UserSessionModel.user_id == user_id,
+                UserSessionModel.expires_at > datetime.utcnow()
+            ).order_by(UserSessionModel.last_active_at.desc()).all()
+            
+            primary_wallet = next((w for w in wallets if w.is_primary), None)
+            
+            return MultiWalletUser(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                role=user.role,
+                phone=user.phone,
+                address=user.address,
+                farm_name=user.farm_name,
+                company_name=user.company_name,
+                is_active=user.is_active,
+                is_verified=user.is_verified,
+                created_at=user.created_at,
+                wallets=[UserWallet(
+                    id=w.id,
+                    wallet_address=w.wallet_address,
+                    wallet_type=w.wallet_type,
+                    is_primary=w.is_primary,
+                    first_used_at=w.first_used_at,
+                    last_used_at=w.last_used_at,
+                    created_at=w.created_at
+                ) for w in wallets],
+                primary_wallet=UserWallet(
+                    id=primary_wallet.id,
+                    wallet_address=primary_wallet.wallet_address,
+                    wallet_type=primary_wallet.wallet_type,
+                    is_primary=primary_wallet.is_primary,
+                    first_used_at=primary_wallet.first_used_at,
+                    last_used_at=primary_wallet.last_used_at,
+                    created_at=primary_wallet.created_at
+                ) if primary_wallet else None,
+                active_sessions=[UserSession(
+                    id=s.id,
+                    session_token=s.session_token,
+                    device_fingerprint=s.device_fingerprint,
+                    ip_address=s.ip_address,
+                    user_agent=s.user_agent,
+                    screen_resolution=s.screen_resolution,
+                    timezone=s.timezone,
+                    language=s.language,
+                    expires_at=s.expires_at,
+                    created_at=s.created_at,
+                    last_active_at=s.last_active_at
+                ) for s in active_sessions]
+            )
+        finally:
+            db.close()
 
 
 @strawberry.type
@@ -220,7 +336,7 @@ class Mutation:
             if not user:
                 # Create new user with wallet authentication
                 # Infer role based on wallet activity (simplified logic)
-                role = UserRole.FARMER  # Default to farmer, could be enhanced with on-chain analysis
+                role = UserRoleModel.FARMER  # Default to farmer, could be enhanced with on-chain analysis
                 
                 user = UserModel(
                     hedera_account_id=hedera_account_id,
@@ -548,3 +664,629 @@ class Mutation:
             outstanding_balance=loan.outstanding_balance,
             created_at=loan.created_at
         )
+    
+    @strawberry.mutation
+    async def authenticate_multi_wallet(self, input: MultiWalletAuthPayload) -> AuthResponse:
+        """
+        Progressive wallet authentication with multi-wallet support.
+        This connects the wallet but requires email verification before completing registration.
+        """
+        db = SessionLocal()
+        
+        try:
+            multi_wallet_service = MultiWalletAuthService(db)
+            
+            # Convert device info to dict
+            device_info = None
+            if input.device_info:
+                device_info = {
+                    'user_agent': input.device_info.user_agent,
+                    'screen_resolution': input.device_info.screen_resolution,
+                    'timezone': input.device_info.timezone,
+                    'language': input.device_info.language,
+                    'ip_address': input.device_info.ip_address,
+                    'browser_signature': input.device_info.browser_signature
+                }
+            
+            # Authenticate and identify user
+            user, is_new_user, session_token = await multi_wallet_service.authenticate_or_identify_user(
+                wallet_address=input.address,
+                signature=input.signature,
+                message=input.message,
+                wallet_type=input.wallet_type.value,
+                public_key=input.public_key,
+                device_info=device_info
+            )
+            
+            if not user:
+                raise HTTPException(status_code=401, detail="Authentication failed")
+            
+            # Check if there's a verified email waiting to be linked (from registration flow)
+            from app.core.redis_client import redis_client
+            if redis_client.redis and is_new_user:
+                # Check for verified email by looking up email verification tokens
+                # We'll check if any verified_email entries exist and try to match them
+                # For simplicity, we'll rely on the frontend to call link_email_to_wallet
+                # after wallet connection, but we could also enhance this
+                pass
+            
+            # Determine registration state
+            wallet_connected = len(user.wallets) > 0
+            email_verified = user.email_verified or False
+            profile_complete = bool(user.full_name and user.role)
+            registration_complete = user.registration_complete or False
+            
+            # Determine if email verification is required
+            requires_email_verification = not email_verified or is_new_user
+            
+            # Determine registration state string
+            if registration_complete:
+                registration_state = "registration_complete"
+            elif profile_complete:
+                registration_state = "profile_complete"
+            elif email_verified:
+                registration_state = "email_verified"
+            else:
+                registration_state = "wallet_connected"
+            
+            # Create JWT token with session info (limited token for unverified users)
+            token_data = {
+                "sub": str(user.id),
+                "hedera_account_id": user.hedera_account_id,
+                "session_token": session_token,
+                "email_verified": email_verified,
+                "registration_complete": registration_complete
+            }
+            access_token = create_access_token(data=token_data)
+            
+            # Determine redirect URL based on registration state
+            if registration_complete and user.full_name:
+                redirect_url = "/dashboard"
+            elif email_verified and not profile_complete:
+                redirect_url = "/auth/complete-registration"
+            elif not email_verified:
+                redirect_url = "/auth/verify-email"
+            else:
+                redirect_url = "/auth/complete-registration"
+            
+            return AuthResponse(
+                token=access_token,
+                user=User(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    role=user.role,
+                    hedera_account_id=user.hedera_account_id,
+                    wallet_type=user.wallet_type,
+                    phone=user.phone,
+                    address=user.address,
+                    farm_name=user.farm_name,
+                    company_name=user.company_name,
+                    is_active=user.is_active,
+                    is_verified=user.is_verified,
+                    email_verified=user.email_verified,
+                    registration_complete=user.registration_complete,
+                    created_at=user.created_at,
+                    updated_at=user.updated_at
+                ),
+                redirect_url=redirect_url,
+                session_id=session_token,
+                is_new_user=is_new_user,
+                requires_email_verification=requires_email_verification,
+                registration_state=registration_state
+            )
+        finally:
+            db.close()
+    
+    @strawberry.mutation
+    async def link_wallet(self, input: WalletLinkingPayload, user_id: str) -> bool:
+        """Link a new wallet to an existing user account"""
+        db = SessionLocal()
+        
+        try:
+            multi_wallet_service = MultiWalletAuthService(db)
+            
+            success = await multi_wallet_service.link_wallet_to_user(
+                user_id=user_id,
+                new_wallet_address=input.new_wallet_address,
+                new_wallet_type=input.new_wallet_type.value,
+                new_wallet_signature=input.new_wallet_signature,
+                primary_wallet_signature=input.primary_wallet_signature,
+                message=input.message,
+                public_key=input.public_key
+            )
+            
+            return success
+        finally:
+            db.close()
+    
+    @strawberry.mutation
+    async def set_primary_wallet(self, user_id: str, wallet_id: str) -> bool:
+        """Set a wallet as the primary wallet for a user"""
+        db = SessionLocal()
+        
+        try:
+            multi_wallet_service = MultiWalletAuthService(db)
+            return multi_wallet_service.set_primary_wallet(user_id, wallet_id)
+        finally:
+            db.close()
+    
+    @strawberry.mutation
+    async def send_otp(self, input: SendOTPInput) -> OTPResponse:
+        """Send OTP to email for verification"""
+        try:
+            # Validate email format
+            import re
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, input.email):
+                return OTPResponse(
+                    success=False,
+                    message="Invalid email format"
+                )
+            
+            # Generate and send OTP
+            success, error_message = await OTPService.generate_and_send_otp(
+                email=input.email,
+                purpose=input.purpose
+            )
+            
+            if success:
+                return OTPResponse(
+                    success=True,
+                    message="Verification code sent to your email"
+                )
+            else:
+                return OTPResponse(
+                    success=False,
+                    message=error_message or "Failed to send verification code"
+                )
+        except Exception as e:
+            return OTPResponse(
+                success=False,
+                message=f"Error: {str(e)}"
+            )
+    
+    @strawberry.mutation
+    async def verify_otp(self, input: VerifyOTPInput) -> OTPResponse:
+        """
+        Verify OTP for email and link it to user account.
+        If wallet_address and wallet_type are provided, link email to that wallet's user.
+        If no user exists (registration flow), store verified email in Redis for later linking.
+        """
+        try:
+            is_valid, message = await OTPService.verify_otp(
+                email=input.email,
+                otp=input.otp,
+                purpose=input.purpose
+            )
+            
+            if is_valid:
+                # Update user email_verified status and link email
+                db = SessionLocal()
+                try:
+                    user = None
+                    
+                    # If wallet info provided, find user by wallet
+                    if input.wallet_address and input.wallet_type:
+                        wallet = db.query(UserWalletModel).filter(
+                            UserWalletModel.wallet_address == input.wallet_address,
+                            UserWalletModel.wallet_type == input.wallet_type.value
+                        ).first()
+                        if wallet:
+                            user = wallet.user
+                    
+                    # If no user found, try by email
+                    if not user:
+                        user = db.query(UserModel).filter(UserModel.email == input.email).first()
+                    
+                    if user:
+                        # Check if email is already taken by another user
+                        if user.email and user.email != input.email:
+                            existing_user = db.query(UserModel).filter(
+                                UserModel.email == input.email,
+                                UserModel.id != user.id
+                            ).first()
+                            if existing_user:
+                                db.close()
+                                return OTPResponse(
+                                    success=False,
+                                    message="This email is already associated with another account"
+                                )
+                        
+                        # Link email to user
+                        user.email = input.email
+                        user.email_verified = True
+                        db.commit()
+                    else:
+                        # No user found - this is registration flow
+                        # Store verified email in Redis for later linking when wallet is connected
+                        from app.core.redis_client import redis_client
+                        import secrets
+                        if redis_client.redis:
+                            # Generate a verification token for this email
+                            verification_token = secrets.token_urlsafe(32)
+                            # Store verified email with token (expires in 30 minutes)
+                            await redis_client.redis.setex(
+                                f"verified_email:{verification_token}",
+                                1800,  # 30 minutes
+                                input.email
+                            )
+                            # Also store email -> token mapping for quick lookup
+                            await redis_client.redis.setex(
+                                f"email_verification_token:{input.email}",
+                                1800,
+                                verification_token
+                            )
+                            # Return success - email is verified, will be linked when wallet connects
+                            db.close()
+                            return OTPResponse(
+                                success=True,
+                                message="Email verified successfully. Please connect your wallet to continue."
+                            )
+                        else:
+                            db.close()
+                            return OTPResponse(
+                                success=False,
+                                message="Service unavailable. Please try again."
+                            )
+                finally:
+                    db.close()
+            
+            return OTPResponse(
+                success=is_valid,
+                message=message
+            )
+        except Exception as e:
+            return OTPResponse(
+                success=False,
+                message=f"Error: {str(e)}"
+            )
+    
+    @strawberry.mutation
+    async def link_email_to_wallet(
+        self,
+        email: str,
+        wallet_address: str,
+        wallet_type: WalletType
+    ) -> OTPResponse:
+        """
+        Link email to wallet-connected user account.
+        If email was already verified (registration flow), link it directly.
+        Otherwise, send OTP for verification.
+        """
+        db = SessionLocal()
+        
+        try:
+            # Find user by wallet
+            wallet = db.query(UserWalletModel).filter(
+                UserWalletModel.wallet_address == wallet_address,
+                UserWalletModel.wallet_type == wallet_type.value
+            ).first()
+            
+            if not wallet:
+                return OTPResponse(
+                    success=False,
+                    message="Wallet not found. Please connect your wallet first."
+                )
+            
+            user = wallet.user
+            
+            # Check if email is already taken
+            existing_user = db.query(UserModel).filter(
+                UserModel.email == email,
+                UserModel.id != user.id
+            ).first()
+            
+            if existing_user:
+                return OTPResponse(
+                    success=False,
+                    message="This email is already associated with another account"
+                )
+            
+            # Check if email was already verified (from registration flow)
+            from app.core.redis_client import redis_client
+            email_already_verified = False
+            if redis_client.redis:
+                # Check if there's a verification token for this email
+                verification_token = await redis_client.redis.get(f"email_verification_token:{email}")
+                if verification_token:
+                    # Verify that the verified email exists
+                    verified_email = await redis_client.redis.get(f"verified_email:{verification_token.decode() if isinstance(verification_token, bytes) else verification_token}")
+                    if verified_email:
+                        email_already_verified = True
+                        # Clean up verification tokens
+                        await redis_client.redis.delete(f"email_verification_token:{email}")
+                        await redis_client.redis.delete(f"verified_email:{verification_token.decode() if isinstance(verification_token, bytes) else verification_token}")
+            
+            if email_already_verified:
+                # Email was already verified, link it directly
+                user.email = email
+                user.email_verified = True
+                db.commit()
+                return OTPResponse(
+                    success=True,
+                    message="Email linked successfully"
+                )
+            else:
+                # Email not verified, send OTP
+                # Temporarily store email (will be confirmed after OTP verification)
+                if redis_client.redis:
+                    await redis_client.redis.setex(
+                        f"pending_email:{user.id}",
+                        600,  # 10 minutes
+                        email
+                    )
+                
+                # Generate and send OTP
+                success, error_message = await OTPService.generate_and_send_otp(
+                    email=email,
+                    purpose="verification"
+                )
+                
+                if success:
+                    return OTPResponse(
+                        success=True,
+                        message="Verification code sent to your email"
+                    )
+                else:
+                    return OTPResponse(
+                        success=False,
+                        message=error_message or "Failed to send verification code"
+                    )
+        finally:
+            db.close()
+    
+    @strawberry.mutation
+    async def complete_registration(
+        self,
+        input: CompleteRegistrationInput,
+        wallet_address: str,
+        wallet_type: WalletType
+    ) -> AuthResponse:
+        """
+        Complete registration after wallet connection and email verification.
+        This is called after wallet is connected and email is verified.
+        """
+        db = SessionLocal()
+        
+        try:
+            # Find user by wallet address
+            wallet = db.query(UserWalletModel).filter(
+                UserWalletModel.wallet_address == wallet_address,
+                UserWalletModel.wallet_type == wallet_type.value
+            ).first()
+            
+            if not wallet:
+                raise HTTPException(status_code=404, detail="Wallet not found. Please connect your wallet first.")
+            
+            user = wallet.user
+            
+            # Verify email matches and is verified
+            if user.email and user.email != input.email:
+                raise HTTPException(status_code=400, detail="Email does not match verified email")
+            
+            if not user.email_verified:
+                raise HTTPException(status_code=400, detail="Email must be verified before completing registration")
+            
+            # Set email if not already set
+            if not user.email:
+                user.email = input.email
+            
+            # Update user profile
+            user.full_name = input.full_name
+            user.role = input.role
+            user.phone = input.phone
+            user.address = input.address
+            user.farm_name = input.farm_name if input.role == UserRoleModel.FARMER else None
+            user.company_name = input.company_name if input.role == UserRoleModel.BUYER else None
+            user.registration_complete = True
+            user.is_verified = True
+            
+            db.commit()
+            db.refresh(user)
+            
+            # Create or update JWT token
+            session = db.query(UserSessionModel).filter(
+                UserSessionModel.current_wallet_id == wallet.id,
+                UserSessionModel.expires_at > datetime.utcnow()
+            ).order_by(UserSessionModel.created_at.desc()).first()
+            
+            token_data = {
+                "sub": str(user.id),
+                "hedera_account_id": user.hedera_account_id,
+                "role": user.role.value,
+                "session_token": session.session_token if session else None
+            }
+            access_token = create_access_token(data=token_data)
+            
+            return AuthResponse(
+                token=access_token,
+                user=User(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    role=user.role,
+                    hedera_account_id=user.hedera_account_id,
+                    wallet_type=user.wallet_type,
+                    phone=user.phone,
+                    address=user.address,
+                    farm_name=user.farm_name,
+                    company_name=user.company_name,
+                    is_active=user.is_active,
+                    is_verified=user.is_verified,
+                    email_verified=user.email_verified,
+                    registration_complete=user.registration_complete,
+                    created_at=user.created_at,
+                    updated_at=user.updated_at
+                ),
+                redirect_url="/dashboard",
+                session_id=session.session_token if session else None,
+                is_new_user=False,
+                requires_email_verification=False,
+                registration_state="registration_complete"
+            )
+        finally:
+            db.close()
+    
+    @strawberry.field
+    async def get_registration_state(self, user_id: str) -> RegistrationState:
+        """Get the current registration state for a user"""
+        db = SessionLocal()
+        
+        try:
+            user = db.query(UserModel).filter(UserModel.id == user_id).first()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            wallet_connected = len(user.wallets) > 0
+            email_verified = user.email_verified or False
+            profile_complete = bool(user.full_name and user.role)
+            registration_complete = user.registration_complete or False
+            
+            # Determine next step
+            next_step = None
+            if not wallet_connected:
+                next_step = "wallet_connection"
+            elif not email_verified:
+                next_step = "email_verification"
+            elif not profile_complete:
+                next_step = "profile_completion"
+            elif not registration_complete:
+                next_step = "registration_completion"
+            
+            return RegistrationState(
+                wallet_connected=wallet_connected,
+                email_verified=email_verified,
+                profile_complete=profile_complete,
+                registration_complete=registration_complete,
+                next_step=next_step
+            )
+        finally:
+            db.close()
+    
+    @strawberry.mutation
+    async def update_user_role(self, role: UserRole, info) -> UpdateUserResponse:
+        """Update user's role/account type"""
+        current_user = info.context.current_user
+        
+        if not current_user:
+            return UpdateUserResponse(
+                success=False,
+                message="Authentication required"
+            )
+        
+        db = SessionLocal()
+        
+        try:
+            user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
+            if not user:
+                return UpdateUserResponse(
+                    success=False,
+                    message="User not found"
+                )
+            
+            user.role = role
+            db.commit()
+            db.refresh(user)
+            
+            return UpdateUserResponse(
+                success=True,
+                message="Account type updated successfully",
+                user=User(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    role=user.role,
+                    hedera_account_id=user.hedera_account_id,
+                    wallet_type=user.wallet_type,
+                    phone=user.phone,
+                    address=user.address,
+                    farm_name=user.farm_name,
+                    company_name=user.company_name,
+                    is_active=user.is_active,
+                    is_verified=user.is_verified,
+                    email_verified=user.email_verified,
+                    registration_complete=user.registration_complete,
+                    created_at=user.created_at,
+                    updated_at=user.updated_at
+                )
+            )
+        except Exception as e:
+            db.rollback()
+            return UpdateUserResponse(
+                success=False,
+                message=f"Failed to update account type: {str(e)}"
+            )
+        finally:
+            db.close()
+    
+    @strawberry.mutation
+    async def update_user_profile(self, input: CompleteRegistrationInput, info) -> UpdateUserResponse:
+        """Update user's profile information"""
+        current_user = info.context.current_user
+        
+        if not current_user:
+            return UpdateUserResponse(
+                success=False,
+                message="Authentication required"
+            )
+        
+        db = SessionLocal()
+        
+        try:
+            user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
+            if not user:
+                return UpdateUserResponse(
+                    success=False,
+                    message="User not found"
+                )
+            
+            # Update user profile
+            if input.full_name:
+                user.full_name = input.full_name
+            if input.phone:
+                user.phone = input.phone
+            if input.address:
+                user.address = input.address
+            if input.farm_name and user.role == UserRoleModel.FARMER:
+                user.farm_name = input.farm_name
+            if input.company_name and user.role == UserRoleModel.BUYER:
+                user.company_name = input.company_name
+            
+            # Mark profile as complete if all required fields are filled
+            if user.full_name and user.role:
+                user.registration_complete = True
+            
+            db.commit()
+            db.refresh(user)
+            
+            return UpdateUserResponse(
+                success=True,
+                message="Profile updated successfully",
+                user=User(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    role=user.role,
+                    hedera_account_id=user.hedera_account_id,
+                    wallet_type=user.wallet_type,
+                    phone=user.phone,
+                    address=user.address,
+                    farm_name=user.farm_name,
+                    company_name=user.company_name,
+                    is_active=user.is_active,
+                    is_verified=user.is_verified,
+                    email_verified=user.email_verified,
+                    registration_complete=user.registration_complete,
+                    created_at=user.created_at,
+                    updated_at=user.updated_at
+                )
+            )
+        except Exception as e:
+            db.rollback()
+            return UpdateUserResponse(
+                success=False,
+                message=f"Failed to update profile: {str(e)}"
+            )
+        finally:
+            db.close()

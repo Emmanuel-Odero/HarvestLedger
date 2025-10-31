@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Boolean, DateTime, Enum, Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
@@ -36,10 +37,27 @@ class User(Base):
     # Status
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    email_verified = Column(Boolean, default=False)
+    registration_complete = Column(Boolean, default=False)  # True when user completes full registration
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Relationships for multi-wallet support
+    wallets = relationship("UserWallet", back_populates="user", cascade="all, delete-orphan")
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+    behavior_patterns = relationship("UserBehaviorPattern", back_populates="user", cascade="all, delete-orphan")
+    wallet_linking_requests = relationship("WalletLinkingRequest", back_populates="user", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
+
+    @property
+    def primary_wallet(self):
+        """Get the primary wallet for this user"""
+        return next((wallet for wallet in self.wallets if wallet.is_primary), None)
+
+    def get_wallet_by_address(self, address: str):
+        """Get a wallet by its address"""
+        return next((wallet for wallet in self.wallets if wallet.wallet_address == address), None)
