@@ -58,13 +58,13 @@ export default function LandingPage() {
 
           <div className="flex items-center space-x-4">
             <Button variant="ghost" asChild>
-              <Link href="/login">Sign In</Link>
+              <Link href="/auth/signin?type=signin">Sign In</Link>
             </Button>
             <Button
               className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
               asChild
             >
-              <Link href="/register">
+              <Link href="/auth/signin?type=onboarding">
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -100,7 +100,7 @@ export default function LandingPage() {
                 className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-8 py-3 text-lg"
                 asChild
               >
-                <Link href="/register">
+                <Link href="/auth/signin?type=trial">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
@@ -281,7 +281,7 @@ export default function LandingPage() {
             className="bg-white text-emerald-600 hover:bg-gray-100 px-8 py-3 text-lg font-semibold"
             asChild
           >
-            <Link href="/register">
+            <Link href="/auth/signin?type=onboarding">
               Get Started Today
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>

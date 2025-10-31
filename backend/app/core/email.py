@@ -69,6 +69,7 @@ class EmailService:
                 message.attach(text_part)
             
             # Send email
+            logger.info(f"Attempting to send email to {to_emails} via {self.smtp_host}:{self.smtp_port}")
             await aiosmtplib.send(
                 message,
                 hostname=self.smtp_host,
@@ -82,7 +83,7 @@ class EmailService:
             return True
             
         except Exception as e:
-            logger.error(f"Failed to send email to {to_emails}: {str(e)}")
+            logger.error(f"Failed to send email to {to_emails}: {str(e)}", exc_info=True)
             return False
     
     async def send_welcome_email(self, to_email: str, user_name: str) -> bool:

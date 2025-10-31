@@ -1,171 +1,185 @@
-# HarvestLedger - Agriculture Supply Chain & Financing Platform
+# HarvestLedger 🌾
 
-A modern web application for agriculture supply chain tracking and financing, built with FastAPI, React/Next.js, and integrated with Hedera blockchain for transparency and tokenization.
+**Blockchain-powered Agricultural Supply Chain Management**
 
-## Architecture Overview
+A modern web application for agriculture supply chain tracking and financing, built with FastAPI, Next.js, and integrated with Hedera blockchain for transparency and tokenization.
+
+## 🏗️ Architecture
 
 - **Backend**: FastAPI + GraphQL (Strawberry) + PostgreSQL + Hedera SDK
-- **Frontend**: Next.js + React + Apollo Client + Tailwind CSS + HashPack
-- **Blockchain**: Hedera Testnet (HCS for logging, HTS for tokenization, Smart Contracts for loans)
-- **Infrastructure**: Docker + Docker Compose
+- **Frontend**: Next.js 16 + React 19 + Apollo Client + Tailwind CSS
+- **Blockchain**: Hedera Testnet (HCS for logging, HTS for tokenization)
+- **Infrastructure**: Docker + Docker Compose + Vercel-ready
 
-## Prerequisites
+## 🚀 Quick Start
 
-1. **Hedera Testnet Account**: Create a free account at [portal.hedera.com](https://portal.hedera.com)
-2. **Docker & Docker Compose**: Latest versions installed
-3. **Node.js 20+** (for local development)
-4. **Python 3.12+** (for local development)
+### Prerequisites
+- Docker & Docker Compose V2
+- Node.js 20+ (for local development)
+- Python 3.12+ (for local development)
 
-### 🔑 Getting Hedera Credentials
+### One-Command Setup
 
-1. **Visit**: [portal.hedera.com](https://portal.hedera.com)
-2. **Create Account**: Sign up for free
-3. **Get Testnet Access**: Navigate to "Testnet Access"
-4. **Generate Credentials**: Create testnet account
-5. **Copy**: Account ID (0.0.XXXXXX) and Private Key
-
-See [HEDERA_SETUP.md](HEDERA_SETUP.md) for detailed instructions.
-
-## Quick Start
-
-### Option 1: Automated Setup (Recommended)
 ```bash
 git clone https://github.com/Emmanuel-Odero/HarvestLedger.git
-cd harvest-ledger
+cd HarvestLedger
 
-# Complete automated setup
-python3 scripts/setup.py
-
-# Create Hedera resources (topics & contracts)
-python3 scripts/setup_hedera.py
-
-# Start the application
-./scripts/start.sh
-```
-
-### Option 2: Manual Setup
-```bash
-git clone <repository>
-cd harvest-ledger
-
-# 1. Setup environment
+# Copy and configure environment
 cp .env.example .env
-# Edit .env with your Hedera testnet credentials
+# Edit .env with your Hedera testnet credentials (optional for development)
 
-# 2. Create Hedera resources
-python3 scripts/create_topic.py      # Creates HCS topic
-python3 scripts/deploy_contract.py   # Deploys smart contract
-
-# 3. Start application
-docker-compose up --build
+# Start everything
+make dev
 ```
 
-### Option 3: Development Mode (Mock Blockchain)
+That's it! 🎉
+
+## 📋 Available Commands
+
 ```bash
-git clone <repository>
-cd harvest-ledger
-
-# Start without real Hedera credentials (uses mocks)
-./scripts/build.sh
-./scripts/start.sh
+make help          # Show all available commands
+make dev           # Start development environment
+make stop          # Stop all services
+make logs          # View logs from all services
+make status        # Show service status
+make health        # Check service health
+make clean         # Clean up Docker resources
+make deploy-vercel # Deploy frontend to Vercel
 ```
 
-### Access Points
+### 🌐 Access Points
+
 - **Frontend**: http://localhost:3000
+- **Dashboard**: http://localhost:3000/dashboard
+- **Environment Test**: http://localhost:3000/env-test
 - **Backend API**: http://localhost:8000
 - **GraphQL Playground**: http://localhost:8000/graphql
 - **API Documentation**: http://localhost:8000/docs
-- **pgAdmin**: http://localhost:5050 (admin@harvest.com / admin123)
-- **MailHog UI**: http://localhost:8025 (Email testing)
+- **PgAdmin**: http://localhost:5050 (admin@harvest.com / admin123)
+- **MailHog**: http://localhost:8026 (Email testing)
 
-## Environment Variables
+## ⚙️ Configuration
 
-Create a `.env` file with your Hedera testnet credentials:
+The application uses a unified `.env` file for all services:
 
 ```env
-# Hedera Configuration
+# Hedera Configuration (optional for development)
 HEDERA_NETWORK=testnet
-OPERATOR_ID=0.0.YOUR_ACCOUNT_ID
+OPERATOR_ID=0.0.7157029
 OPERATOR_KEY=your_private_key_here
-HEDERA_RPC_URL=https://testnet.hashio.io/api
 
-# Database
+# Database (auto-configured for Docker)
 DATABASE_URL=postgresql://harvest_user:harvest_pass@db:5432/harvest_ledger
 
-# JWT
+# Frontend (auto-configured for Docker)
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_GRAPHQL_URL=http://localhost:8000/graphql
+
+# JWT & Security
 JWT_SECRET=your_jwt_secret_here
 JWT_ALGORITHM=HS256
-
-# API
-BACKEND_URL=http://localhost:8000
-FRONTEND_URL=http://localhost:3000
 ```
 
-## Development
+## 🛠️ Development Workflow
 
-### Docker Development (Recommended)
+### Daily Development
 ```bash
-# Start all services (includes MailHog & pgAdmin)
-./scripts/docker-dev.sh up
-
-# View logs
-./scripts/docker-dev.sh logs
-
-# Stop services
-./scripts/docker-dev.sh down
-
-# Restart services
-./scripts/docker-dev.sh restart
+make dev           # Start everything
+# Make your changes...
+make logs          # Check logs if needed
+make stop          # Stop when done
 ```
 
-### Local Development
-#### Backend Development
+### Database Operations
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+make db-migrate    # Run migrations
+make db-backup     # Backup database
+make db-reset      # Reset database (⚠️ destroys data)
 ```
 
-#### Frontend Development
+### Debugging & Maintenance
 ```bash
-cd frontend
-npm install
-npm run dev
+make verify        # Verify setup
+make health        # Check service health
+make shell-backend # Open backend shell
+make shell-frontend # Open frontend shell
+make clean         # Clean up resources
 ```
 
-### Development Tools
-- **pgAdmin**: Database management at http://localhost:5050
-  - Email: admin@harvest.com
-  - Password: admin123
-- **MailHog**: Email testing at http://localhost:8025
-  - SMTP: localhost:1025 (for backend email sending)
+## 🚀 Deployment
 
-## Production Deployment
-
-Use the production docker-compose configuration:
+### Vercel (Frontend)
 ```bash
-docker-compose -f docker-compose.prod.yml up --build
+make deploy-vercel
 ```
 
-## Key Features
+### Production Docker
+```bash
+make prod
+```
 
-- **Supply Chain Tracking**: Immutable harvest records via Hedera Consensus Service
-- **Crop Tokenization**: HTS tokens representing crop yields for trading/financing
-- **Smart Contracts**: Automated loan agreements with conditional payments
-- **Real-time Analytics**: Live data from Hedera mirror nodes
-- **Wallet Integration**: HashPack for secure blockchain interactions
+## ✨ Key Features
 
-## API Documentation
+- **🔗 Supply Chain Tracking**: Immutable harvest records via Hedera Consensus Service
+- **🪙 Crop Tokenization**: HTS tokens representing crop yields for trading/financing
+- **📜 Smart Contracts**: Automated loan agreements with conditional payments
+- **📊 Real-time Analytics**: Live data from Hedera mirror nodes
+- **🔐 Wallet Integration**: HashPack for secure blockchain interactions
+- **🐳 Docker-First**: Complete containerized development environment
+- **☁️ Vercel-Ready**: One-command deployment to production
 
-- GraphQL Schema: Available at `/graphql` endpoint
-- REST API: Available at `/docs` (FastAPI auto-generated)
+## 🏗️ Project Structure
 
-## Security Features
+```
+HarvestLedger/
+├── frontend/          # Next.js 16 + React 19 + Apollo Client
+├── backend/           # FastAPI + GraphQL + PostgreSQL
+├── docker-compose.yml # Development environment
+├── Makefile          # All commands in one place
+└── .env              # Unified configuration
+```
 
-- JWT-based authentication
-- Environment-based secret management
-- CORS configuration
-- Docker security best practices
-- Hedera testnet integration (zero-cost transactions)
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Port conflicts?**
+```bash
+make clean && make dev
+```
+
+**Services not starting?**
+```bash
+make verify  # Check configuration
+make health  # Check service health
+```
+
+**Need fresh start?**
+```bash
+make clean && make build && make dev
+```
+
+### Getting Help
+
+```bash
+make help    # Show all available commands
+make status  # Check what's running
+make logs    # See what's happening
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test with `make dev`
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+**Built with ❤️ for the agricultural community**

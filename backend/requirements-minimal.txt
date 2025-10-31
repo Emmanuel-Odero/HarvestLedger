@@ -1,26 +1,17 @@
 # Minimal requirements for basic functionality
-# Use this if you encounter issues with the full requirements.txt
-
-# Core FastAPI
 fastapi==0.104.1
-uvicorn==0.24.0
-
-# Database
+uvicorn[standard]==0.24.0
+strawberry-graphql[fastapi]==0.215.1
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
-
-# GraphQL
-strawberry-graphql==0.215.1
-
-# Authentication
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-
-# Basic utilities
-python-dotenv==1.0.0
-requests==2.31.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
-
-# File upload
 python-multipart==0.0.6
+redis==5.0.1
+httpx==0.25.2
+python-dotenv==1.0.0
+hedera-sdk-py
+eth-account==0.9.0
+eth-utils==2.3.0

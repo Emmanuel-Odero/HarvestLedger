@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Mirror Node
     MIRROR_NODE_URL: str = "https://testnet.mirrornode.hedera.com/api/v1"
     
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379"
+    
     # API URLs
     BACKEND_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = "http://localhost:3000"

@@ -2,38 +2,54 @@ FROM python:3.12-slim as builder
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including Java for Hedera SDK
 RUN apt-get update && apt-get install -y \
     gcc \
+    build-essential \
+    libpq-dev \
+    default-jdk \
     && rm -rf /var/lib/apt/lists/*
 
+# Set JAVA_HOME for Hedera SDK
+ENV JAVA_HOME=/usr/lib/jvm/default-java
+
+# Upgrade pip and install wheel
+RUN pip install --upgrade pip setuptools wheel
+
 # Copy requirements and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+COPY requirements-prod.txt .
+RUN pip install --no-cache-dir --user -r requirements-prod.txt
 
 # Production stage
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install curl for health checks
+# Install system dependencies including Java for Hedera SDK
 RUN apt-get update && apt-get install -y \
     curl \
+    default-jdk \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder
-COPY --from=builder /root/.local /root/.local
+# Set JAVA_HOME for Hedera SDK
+ENV JAVA_HOME=/usr/lib/jvm/default-java
+
+# Create non-root user first
+RUN useradd --create-home --shell /bin/bash app
+
+# Copy installed packages from builder to app user home
+COPY --from=builder /root/.local /home/app/.local
+RUN chown -R app:app /home/app/.local
 
 # Copy application code
 COPY . .
+RUN chown -R app:app /app
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
 USER app
 
 # Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/app/.local/bin:$PATH
+ENV PYTHONPATH=/home/app/.local/lib/python3.12/site-packages:$PYTHONPATH
 
 # Expose port
 EXPOSE 8000

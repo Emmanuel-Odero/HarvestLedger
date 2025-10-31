@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16
@@ -19,6 +17,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: harvest_redis_prod
+    networks:
+      - harvest_network_prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -26,12 +35,17 @@ services:
     container_name: harvest_backend_prod
     environment:
       - DATABASE_URL=postgresql://harvest_user:harvest_pass@db:5432/harvest_ledger
+      - REDIS_URL=redis://redis:6379
+      - FRONTEND_URL=https://harvestledger.app
+      - CORS_ORIGINS=https://harvestledger.app
     env_file:
       - .env
     networks:
       - harvest_network_prod
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -45,12 +59,15 @@ services:
       dockerfile: Dockerfile.prod
     container_name: harvest_frontend_prod
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
-      - NEXT_PUBLIC_GRAPHQL_URL=http://backend:8000/graphql
+      - NEXT_PUBLIC_BACKEND_URL=https://harvestledger.app
+      - NEXT_PUBLIC_API_URL=https://harvestledger.app
+      - NEXT_PUBLIC_GRAPHQL_URL=https://harvestledger.app/graphql
+      - NODE_ENV=production
     env_file:
       - .env
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - harvest_network_prod
 

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:16
@@ -38,12 +36,25 @@ services:
     networks:
       - harvest_network
 
+  redis:
+    image: redis:7-alpine
+    container_name: harvest_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - harvest_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   mailhog:
     image: mailhog/mailhog:latest
     container_name: harvest_mailhog
     ports:
-      - "1025:1025"  # SMTP server
-      - "8025:8025"  # Web UI
+      - "1026:1025"  # SMTP server (using 1026 to avoid conflicts)
+      - "8026:8025"  # Web UI (using 8026 to avoid conflicts)
     networks:
       - harvest_network
 
@@ -54,6 +65,7 @@ services:
     container_name: harvest_backend
     environment:
       - DATABASE_URL=postgresql://harvest_user:harvest_pass@db:5432/harvest_ledger
+      - REDIS_URL=redis://redis:6379
       - SMTP_HOST=mailhog
       - SMTP_PORT=1025
       - SMTP_USER=
@@ -69,6 +81,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       mailhog:
         condition: service_started
     networks:
@@ -78,7 +92,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      start_period: 40s
 
   frontend:
     build:
@@ -86,8 +100,10 @@ services:
       dockerfile: Dockerfile
     container_name: harvest_frontend
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
-      - NEXT_PUBLIC_GRAPHQL_URL=http://localhost:8000/graphql
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_GRAPHQL_URL=http://backend:8000/graphql
+      - NODE_ENV=development
     env_file:
       - .env
     volumes:
