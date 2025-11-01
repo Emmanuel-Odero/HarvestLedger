@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context'
 import { useMutation } from '@apollo/client'
-import { RECORD_HARVEST } from '@/lib/graphql/auth'
+import { RECORD_HARVEST } from '@/lib/graphql/harvest'
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
