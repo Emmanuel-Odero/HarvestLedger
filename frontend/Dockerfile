@@ -9,6 +9,9 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Set proper permissions
+RUN chmod -R 755 /app
+
 # Expose port
 EXPOSE 3000
 
