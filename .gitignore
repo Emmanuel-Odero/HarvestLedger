@@ -261,3 +261,5 @@ hedera-*.json
 local/
 
 /scripts/git-commit-changes.sh
+# Kiro IDE files
+.kiro/
