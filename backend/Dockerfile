@@ -31,10 +31,8 @@ COPY . .
 # Make startup script executable (before switching to non-root user)
 RUN chmod +x start.sh wait-for-db.py
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
-USER app
+# Set proper permissions for the app directory
+RUN chmod -R 755 /app
 
 # Expose port
 EXPOSE 8000
