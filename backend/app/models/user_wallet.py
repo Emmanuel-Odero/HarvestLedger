@@ -14,7 +14,7 @@ class UserWallet(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    wallet_address = Column(String(42), nullable=False)
+    wallet_address = Column(String(255), nullable=False)
     wallet_type = Column(String(50), nullable=False)  # HASHPACK, BLADE, KABILA, METAMASK, PORTAL
     public_key = Column(Text, nullable=True)
     is_primary = Column(Boolean, default=False)
@@ -83,7 +83,7 @@ class WalletLinkingRequest(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    new_wallet_address = Column(String(42), nullable=False)
+    new_wallet_address = Column(String(255), nullable=False)
     new_wallet_type = Column(String(50), nullable=False)
     verification_token = Column(String(255), nullable=False)
     primary_signature = Column(Text, nullable=True)

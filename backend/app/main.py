@@ -6,7 +6,7 @@ import logging
 
 from app.core.config import settings
 from app.core.database import engine, Base, get_db
-from app.api.routes import health
+from app.api.routes import health, auth
 # from app.api.routes import email  # Temporarily disabled
 from app.core.hedera import hedera_client
 from app.core.redis_client import redis_client
@@ -88,6 +88,7 @@ graphql_app = GraphQLRouter(schema, context_getter=get_graphql_context)
 
 # Include routes
 app.include_router(health.router, prefix="", tags=["health"])
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 # app.include_router(email.router, prefix="/api/email", tags=["email"])  # Temporarily disabled
 app.include_router(graphql_app, prefix="/graphql")
 

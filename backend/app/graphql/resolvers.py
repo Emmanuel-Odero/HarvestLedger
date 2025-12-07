@@ -314,12 +314,20 @@ class Mutation:
     
     @strawberry.mutation
     async def authenticate_wallet(self, input: WalletAuthPayload) -> AuthResponse:
-        """Authenticate user with wallet signature"""
+        """Authenticate user with wallet signature - supports multi-wallet"""
         db = SessionLocal()
         
         try:
+            # Log incoming authentication request
+            print(f"🔐 Authenticating wallet:")
+            print(f"   Wallet Type: {input.wallet_type.value}")
+            print(f"   Address: {input.address[:20]}...")
+            print(f"   Message length: {len(input.message)}")
+            print(f"   Signature length: {len(input.signature)}")
+            print(f"   Has public_key: {input.public_key is not None}")
+            
             # Verify wallet signature
-            is_valid, hedera_account_id = await WalletAuthenticator.authenticate_wallet(
+            is_valid, account_id = await WalletAuthenticator.authenticate_wallet(
                 address=input.address,
                 signature=input.signature,
                 message=input.message,
@@ -327,44 +335,116 @@ class Mutation:
                 public_key=input.public_key
             )
             
-            if not is_valid or not hedera_account_id:
-                raise HTTPException(status_code=401, detail="Invalid wallet signature")
-            
-            # Find or create user
-            user = db.query(UserModel).filter(UserModel.hedera_account_id == hedera_account_id).first()
-            
-            if not user:
-                # Create new user with wallet authentication
-                # Infer role based on wallet activity (simplified logic)
-                role = UserRoleModel.FARMER  # Default to farmer, could be enhanced with on-chain analysis
-                
-                user = UserModel(
-                    hedera_account_id=hedera_account_id,
-                    wallet_type=input.wallet_type.value,
-                    role=role,
-                    is_active=True,
-                    is_verified=False
+            if not is_valid or not account_id:
+                # Return error response instead of raising exception
+                return AuthResponse(
+                    success=False,
+                    message="Invalid wallet signature",
+                    token="",
+                    user=None,
+                    redirect_url=""
                 )
-                
-                db.add(user)
+            
+            # Check if wallet exists in user_wallets table
+            user_wallet = db.query(UserWalletModel).filter(
+                UserWalletModel.wallet_address == account_id,
+                UserWalletModel.wallet_type == input.wallet_type.value
+            ).first()
+            
+            user = None
+            if user_wallet:
+                # Existing wallet - get the user
+                user = db.query(UserModel).filter(UserModel.id == user_wallet.user_id).first()
+                # Update last used timestamp
+                user_wallet.last_used_at = datetime.utcnow()
                 db.commit()
-                db.refresh(user)
+                print(f"✅ Existing user found: {user.id}")
+            else:
+                # Check if user exists with this hedera_account_id (legacy field)
+                user = db.query(UserModel).filter(
+                    UserModel.hedera_account_id == account_id
+                ).first()
+                
+                if user:
+                    # User exists but wallet entry is missing - create wallet entry
+                    print(f"✅ Found existing user by hedera_account_id: {user.id}")
+                    print(f"🔗 Creating missing wallet entry for user")
+                    
+                    user_wallet = UserWalletModel(
+                        user_id=user.id,
+                        wallet_address=account_id,
+                        wallet_type=input.wallet_type.value,
+                        public_key=input.public_key,
+                        is_primary=True,  # First wallet is primary
+                        first_used_at=datetime.utcnow(),
+                        last_used_at=datetime.utcnow()
+                    )
+                    
+                    db.add(user_wallet)
+                    db.commit()
+                    db.refresh(user)
+                else:
+                    # New wallet - create new user
+                    print(f"🆕 Creating new user for wallet: {account_id[:20]}...")
+                    
+                    # Infer role based on wallet activity (simplified logic)
+                    role = UserRoleModel.FARMER  # Default to farmer
+                    
+                    # Create new user
+                    user = UserModel(
+                        hedera_account_id=account_id,  # Keep for backward compatibility
+                        wallet_type=input.wallet_type.value,
+                        role=role,
+                        is_active=True,
+                        is_verified=False,
+                        email_verified=False,
+                        registration_complete=False
+                    )
+                    
+                    db.add(user)
+                    db.flush()  # Get user.id without committing
+                    
+                    # Create wallet entry
+                    user_wallet = UserWalletModel(
+                        user_id=user.id,
+                        wallet_address=account_id,
+                        wallet_type=input.wallet_type.value,
+                        public_key=input.public_key,
+                        is_primary=True,  # First wallet is primary
+                        first_used_at=datetime.utcnow(),
+                        last_used_at=datetime.utcnow()
+                    )
+                    
+                    db.add(user_wallet)
+                    db.commit()
+                    db.refresh(user)
+                    print(f"✅ New user created: {user.id}")
             
             # Create JWT token
             token_data = {
                 "sub": str(user.id),
-                "hedera_account_id": user.hedera_account_id,
-                "wallet_type": user.wallet_type
+                "wallet_address": account_id,
+                "wallet_type": input.wallet_type.value
             }
             access_token = create_access_token(data=token_data)
             
             # Determine redirect URL based on user state
             redirect_url = "/dashboard"
-            if not user.full_name:  # New user needs onboarding
+            
+            # Check if user needs to complete registration
+            if not user.email or not user.email_verified:
+                redirect_url = "/onboarding/complete"
+                print(f"⚠️  User needs to complete registration (no verified email)")
+            elif not user.full_name:
                 redirect_url = "/onboarding"
+                print(f"⚠️  User needs onboarding (no full name)")
             
             return AuthResponse(
+                success=True,
+                message="Authentication successful",
                 token=access_token,
+                access_token=access_token,
+                refresh_token=None,  # TODO: Implement refresh token
                 user=User(
                     id=user.id,
                     email=user.email,
@@ -378,9 +458,24 @@ class Mutation:
                     company_name=user.company_name,
                     is_active=user.is_active,
                     is_verified=user.is_verified,
-                    created_at=user.created_at
+                    email_verified=user.email_verified,
+                    registration_complete=user.registration_complete,
+                    created_at=user.created_at,
+                    updated_at=user.updated_at
                 ),
                 redirect_url=redirect_url
+            )
+        except Exception as e:
+            print(f"❌ Error in authenticate_wallet: {e}")
+            import traceback
+            traceback.print_exc()
+            db.rollback()
+            return AuthResponse(
+                success=False,
+                message=f"Authentication error: {str(e)}",
+                token="",
+                user=None,
+                redirect_url=""
             )
         finally:
             db.close()
@@ -418,7 +513,11 @@ class Mutation:
             access_token = create_access_token(data={"sub": str(user.id)})
             
             return AuthResponse(
+                success=True,
+                message="Registration successful",
                 token=access_token,
+                access_token=access_token,
+                refresh_token=None,
                 user=User(
                     id=user.id,
                     email=user.email,
@@ -432,7 +531,10 @@ class Mutation:
                     company_name=user.company_name,
                     is_active=user.is_active,
                     is_verified=user.is_verified,
-                    created_at=user.created_at
+                    email_verified=user.email_verified,
+                    registration_complete=user.registration_complete,
+                    created_at=user.created_at,
+                    updated_at=user.updated_at
                 ),
                 redirect_url="/dashboard"
             )
@@ -452,7 +554,11 @@ class Mutation:
             access_token = create_access_token(data={"sub": str(user.id)})
             
             return AuthResponse(
+                success=True,
+                message="Login successful",
                 token=access_token,
+                access_token=access_token,
+                refresh_token=None,
                 user=User(
                     id=user.id,
                     email=user.email,
@@ -466,7 +572,10 @@ class Mutation:
                     company_name=user.company_name,
                     is_active=user.is_active,
                     is_verified=user.is_verified,
-                    created_at=user.created_at
+                    email_verified=user.email_verified,
+                    registration_complete=user.registration_complete,
+                    created_at=user.created_at,
+                    updated_at=user.updated_at
                 ),
                 redirect_url="/dashboard"
             )
@@ -750,7 +859,11 @@ class Mutation:
                 redirect_url = "/auth/complete-registration"
             
             return AuthResponse(
+                success=True,
+                message="Multi-wallet authentication successful",
                 token=access_token,
+                access_token=access_token,
+                refresh_token=None,
                 user=User(
                     id=user.id,
                     email=user.email,
@@ -1100,7 +1213,11 @@ class Mutation:
             access_token = create_access_token(data=token_data)
             
             return AuthResponse(
+                success=True,
+                message="Registration completed successfully",
                 token=access_token,
+                access_token=access_token,
+                refresh_token=None,
                 user=User(
                     id=user.id,
                     email=user.email,

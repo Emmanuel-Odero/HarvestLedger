@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # Mirror Node
     MIRROR_NODE_URL: str = "https://testnet.mirrornode.hedera.com/api/v1"
     
+    # Cardano Configuration
+    CARDANO_NETWORK: str = "preprod"  # 'preprod' or 'mainnet'
+    BLOCKFROST_PROJECT_ID: str = ""
+    BLOCKFROST_API_URL: str = "https://cardano-preprod.blockfrost.io/api/v0"
+    
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
     

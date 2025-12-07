@@ -47,6 +47,10 @@ class WalletType(str, Enum):
     KABILA = "KABILA"
     METAMASK = "METAMASK"
     PORTAL = "PORTAL"
+    NAMI = "NAMI"
+    ETERNL = "ETERNL"
+    LACE = "LACE"
+    FLINT = "FLINT"
 
 # Convert to Strawberry enums
 UserRole = strawberry.enum(UserRole)
@@ -75,6 +79,16 @@ class User:
     registration_complete: Optional[bool] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    @strawberry.field
+    def wallet_address(self) -> str:
+        """Alias for hedera_account_id for frontend compatibility"""
+        return self.hedera_account_id
+    
+    @strawberry.field
+    def is_email_verified(self) -> Optional[bool]:
+        """Alias for email_verified for frontend compatibility"""
+        return self.email_verified
 
 
 @strawberry.type
@@ -181,9 +195,13 @@ class WalletLinkingRequest:
 
 @strawberry.type
 class AuthResponse:
-    token: str
-    user: User
-    redirect_url: str
+    success: bool
+    message: str
+    token: Optional[str] = None
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    user: Optional[User] = None
+    redirect_url: Optional[str] = None
     session_id: Optional[str] = None
     is_new_user: bool = False
     requires_email_verification: bool = False

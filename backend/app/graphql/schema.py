@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import Request
 
 from app.graphql.resolvers import Query, Mutation
+from app.graphql.cardano_resolvers import CardanoQuery, CardanoMutation
 from app.core.auth import verify_token
 from app.models.user import User
 
@@ -47,8 +48,22 @@ def get_context(request: Request, db: Session = None):
     return Context(db=db, current_user=current_user)
 
 
+# Combine existing and Cardano queries
+@strawberry.type
+class CombinedQuery(Query, CardanoQuery):
+    """Combined GraphQL queries including Hedera and Cardano operations"""
+    pass
+
+
+# Combine existing and Cardano mutations
+@strawberry.type
+class CombinedMutation(Mutation, CardanoMutation):
+    """Combined GraphQL mutations including Hedera and Cardano operations"""
+    pass
+
+
 # Create the GraphQL schema
 schema = strawberry.Schema(
-    query=Query,
-    mutation=Mutation
+    query=CombinedQuery,
+    mutation=CombinedMutation
 )

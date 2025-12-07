@@ -10,3 +10,4 @@ export { WalletConnectionDemo } from "./WalletConnectionDemo";
 export { HarvestRecordingWorkflow } from "./HarvestRecordingWorkflow";
 export { TokenTransferDemo } from "./TokenTransferDemo";
 export { CertificationSystem } from "./CertificationSystem";
+export { CardanoShowcase } from "./CardanoShowcase";

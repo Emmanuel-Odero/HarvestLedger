@@ -44,6 +44,7 @@ dev: ## Start development environment
 	@echo "$(BLUE)🔧 Backend API:$(RESET)  http://localhost:8000"
 	@echo "$(BLUE)📊 GraphQL:$(RESET)      http://localhost:8000/graphql"
 	@echo "$(BLUE)🗄️  PgAdmin:$(RESET)      http://localhost:5050"
+	@echo "$(BLUE)📧 MailHog:$(RESET)      http://localhost:8025"
 
 prod: ## Start production environment
 	@echo "$(BLUE)🚀 Starting production environment...$(RESET)"
@@ -90,10 +91,45 @@ health: ## Check health of running services
 	@echo ""
 	@echo "$(YELLOW)Frontend Health:$(RESET)"
 	@curl -s -o /dev/null -w "Status: %{http_code}\n" http://localhost:3000 || echo "$(RED)❌ Frontend not responding$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)MailHog Health:$(RESET)"
+	@curl -s -o /dev/null -w "Status: %{http_code}\n" http://localhost:8025 || echo "$(RED)❌ MailHog not responding$(RESET)"
 
 verify-hedera: ## Verify Hedera SDK installation in container
 	@echo "$(BLUE)🔗 Verifying Hedera SDK installation...$(RESET)"
 	@docker compose exec backend python verify-hedera-sdk.py || echo "$(RED)❌ Hedera SDK verification failed$(RESET)"
+
+cardano-test: ## Run Cardano integration tests
+	@echo "$(BLUE)🧪 Running Cardano integration tests...$(RESET)"
+	@echo "$(YELLOW)Backend Tests:$(RESET)"
+	@python backend/tests/run_integration_test.py
+	@echo ""
+	@echo "$(YELLOW)Frontend Tests:$(RESET)"
+	@cd frontend && npm test -- lib/__tests__/integration-cardano.test.ts
+	@echo "$(GREEN)✅ Cardano tests completed$(RESET)"
+
+cardano-setup: ## Setup Cardano development environment
+	@echo "$(BLUE)🔧 Setting up Cardano development environment...$(RESET)"
+	@echo "$(YELLOW)Installing MeshJS dependencies...$(RESET)"
+	@cd frontend && npm install @meshsdk/core @meshsdk/react
+	@echo "$(YELLOW)Installing PyCardano...$(RESET)"
+	@cd backend && pip install pycardano blockfrost-python
+	@echo "$(YELLOW)Checking environment variables...$(RESET)"
+	@if [ -z "$$BLOCKFROST_PROJECT_ID" ]; then \
+		echo "$(RED)⚠️  BLOCKFROST_PROJECT_ID not set$(RESET)"; \
+		echo "$(YELLOW)Please add BLOCKFROST_PROJECT_ID to your .env file$(RESET)"; \
+		echo "$(YELLOW)Get your API key from: https://blockfrost.io$(RESET)"; \
+	else \
+		echo "$(GREEN)✅ BLOCKFROST_PROJECT_ID is set$(RESET)"; \
+	fi
+	@echo "$(GREEN)✅ Cardano setup completed$(RESET)"
+	@echo "$(BLUE)📖 See CARDANO_SETUP.md for wallet installation instructions$(RESET)"
+
+cardano-docker-test: ## Test Cardano integration in Docker environment
+	@bash scripts/test-cardano-docker.sh
+
+cardano-validate: ## Validate Cardano integration readiness
+	@bash scripts/validate-cardano-docker.sh
 
 ##@ Database
 db-shell: ## Open PostgreSQL shell
@@ -111,6 +147,12 @@ shell-backend: ## Execute shell in backend container
 
 shell-frontend: ## Execute shell in frontend container
 	@docker compose exec frontend sh
+
+##@ Email Testing
+mailhog: ## Open MailHog web interface
+	@echo "$(BLUE)📧 Opening MailHog web interface...$(RESET)"
+	@echo "$(GREEN)MailHog UI:$(RESET) http://localhost:8025"
+	@open http://localhost:8025 2>/dev/null || xdg-open http://localhost:8025 2>/dev/null || echo "$(YELLOW)Please open http://localhost:8025 in your browser$(RESET)"
 
 ##@ Quick Commands
 up: dev ## Alias for 'make dev'
