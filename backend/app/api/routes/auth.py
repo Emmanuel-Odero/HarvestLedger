@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from app.core.database import get_db
-from app.core.auth import create_access_token, verify_password, get_password_hash
+from app.core.auth import create_access_token, verify_password, get_password_hash, get_current_user
 from app.core.config import settings
 from app.models.user import User
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class Token(BaseModel):
@@ -16,7 +16,7 @@ class Token(BaseModel):
 
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     full_name: str
     role: str = "farmer"
@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     is_verified: bool
+    hedera_account_id: str = None
 
     class Config:
         from_attributes = True
@@ -103,3 +104,17 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current user information from JWT token"""
+    return UserResponse(
+        id=str(current_user.id),
+        email=current_user.email or "",
+        full_name=current_user.full_name or "",
+        role=current_user.role,
+        is_active=current_user.is_active,
+        is_verified=current_user.is_verified,
+        hedera_account_id=current_user.hedera_account_id
+    )
