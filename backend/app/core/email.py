@@ -6,8 +6,20 @@ import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List, Optional
-import aiosmtplib
-from jinja2 import Environment, BaseLoader
+
+try:
+    import aiosmtplib
+    AIOSMTPLIB_AVAILABLE = True
+except ImportError:
+    AIOSMTPLIB_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("aiosmtplib not available - email functionality will be disabled")
+
+try:
+    from jinja2 import Environment, BaseLoader
+    JINJA2_AVAILABLE = True
+except ImportError:
+    JINJA2_AVAILABLE = False
 
 from app.core.config import settings
 
@@ -46,6 +58,10 @@ class EmailService:
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
+        if not AIOSMTPLIB_AVAILABLE:
+            logger.warning(f"Email sending disabled - aiosmtplib not available. Would have sent to: {to_emails}")
+            return False
+            
         try:
             # Create message
             message = MIMEMultipart('alternative')
