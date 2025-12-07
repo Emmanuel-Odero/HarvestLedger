@@ -1,252 +1,114 @@
 /**
- * Example Component Demonstrating Demo Mode Usage
+ * Demo Mode Example Component
  *
- * This component shows how to integrate demo mode into your application
- * and use the mock GraphQL resolvers.
+ * Demonstrates how to use the environment variable-based demo mode configuration.
+ * This component shows the current demo mode status and allows toggling.
  */
 
 "use client";
 
-import { useQuery, gql } from "@apollo/client";
 import { useDemoMode } from "@/lib/demo-mode-context";
-
-// Example GraphQL queries
-const GET_HARVESTS = gql`
-  query GetHarvests($limit: Int, $offset: Int, $cropType: String) {
-    harvests(limit: $limit, offset: $offset, cropType: $cropType) {
-      items {
-        id
-        farmer_id
-        crop_type
-        quantity
-        unit
-        harvest_date
-        quality_grade
-        hcs_transaction_id
-        status
-      }
-      total
-      hasMore
-      nextOffset
-    }
-  }
-`;
-
-const GET_USERS = gql`
-  query GetUsers($limit: Int, $offset: Int, $role: String) {
-    users(limit: $limit, offset: $offset, role: $role) {
-      items {
-        id
-        email
-        full_name
-        role
-        hedera_account_id
-        farm_name
-        company_name
-      }
-      total
-      hasMore
-    }
-  }
-`;
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export function DemoModeExample() {
-  const { isDemoMode, toggleDemoMode, config, updateConfig } = useDemoMode();
+  const { isDemoMode, enableDemoMode, disableDemoMode, config } = useDemoMode();
 
-  // Query harvests
-  const {
-    data: harvestData,
-    loading: harvestLoading,
-    error: harvestError,
-  } = useQuery(GET_HARVESTS, {
-    variables: { limit: 5, cropType: "coffee" },
-  });
-
-  // Query users
-  const {
-    data: userData,
-    loading: userLoading,
-    error: userError,
-  } = useQuery(GET_USERS, {
-    variables: { limit: 5, role: "FARMER" },
-  });
+  // Get the environment variable value
+  const envDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-4">Demo Mode Example</h1>
-
-        {/* Demo Mode Controls */}
-        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-6">
-          <h2 className="text-lg font-semibold mb-3">Demo Mode Controls</h2>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Demo Mode</span>
-              <button
-                onClick={toggleDemoMode}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isDemoMode
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                }`}
-              >
-                {isDemoMode ? "Enabled" : "Disabled"}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Simulate Latency</span>
-              <button
-                onClick={() =>
-                  updateConfig({ simulateLatency: !config.simulateLatency })
-                }
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  config.simulateLatency
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                }`}
-              >
-                {config.simulateLatency ? "On" : "Off"}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Error Rate</span>
-              <select
-                value={config.errorRate}
-                onChange={(e) =>
-                  updateConfig({ errorRate: parseFloat(e.target.value) })
-                }
-                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-              >
-                <option value="0">0% (No errors)</option>
-                <option value="0.02">2% (Realistic)</option>
-                <option value="0.05">5% (Testing)</option>
-                <option value="0.1">10% (Stress test)</option>
-              </select>
-            </div>
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Demo Mode Configuration</CardTitle>
+          <Badge variant={isDemoMode ? "default" : "secondary"}>
+            {isDemoMode ? "Demo Mode" : "Live Mode"}
+          </Badge>
+        </div>
+        <CardDescription>
+          Control whether the application uses simulated or real blockchain data
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Environment Variable Status */}
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-sm font-semibold mb-2">Environment Variable</h3>
+          <div className="flex items-center justify-between">
+            <code className="text-sm">NEXT_PUBLIC_DEMO_MODE</code>
+            <Badge variant={envDemoMode ? "default" : "outline"}>
+              {envDemoMode ? "true" : "false"}
+            </Badge>
           </div>
+          <p className="text-xs text-gray-600 mt-2">
+            Set in .env file. Requires server restart to change.
+          </p>
         </div>
 
-        {/* Status Display */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
+        {/* Current Status */}
+        <div className="p-4 bg-gray-50 rounded-lg">
           <h3 className="text-sm font-semibold mb-2">Current Status</h3>
-          <div className="text-sm space-y-1">
-            <p>
-              <span className="font-medium">Mode:</span>{" "}
-              {isDemoMode ? "Demo (Mock Data)" : "Live (Real Backend)"}
-            </p>
-            <p>
-              <span className="font-medium">Latency Simulation:</span>{" "}
-              {config.simulateLatency ? "Enabled" : "Disabled"}
-            </p>
-            <p>
-              <span className="font-medium">Error Rate:</span>{" "}
-              {(config.errorRate * 100).toFixed(0)}%
-            </p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>Mode:</span>
+              <span className="font-medium">
+                {isDemoMode ? "Demo (Simulated)" : "Live (Real Blockchain)"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Simulate Latency:</span>
+              <span className="font-medium">
+                {config.simulateLatency ? "Yes" : "No"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Error Rate:</span>
+              <span className="font-medium">
+                {(config.errorRate * 100).toFixed(1)}%
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Data Display */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Harvests */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 className="text-lg font-semibold mb-3">Coffee Harvests</h2>
-
-          {harvestLoading && (
-            <div className="text-sm text-gray-500">Loading...</div>
-          )}
-
-          {harvestError && (
-            <div className="text-sm text-red-600">
-              Error: {harvestError.message}
-            </div>
-          )}
-
-          {harvestData && (
-            <>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Showing {harvestData.harvests.items.length} of{" "}
-                {harvestData.harvests.total} harvests
-              </div>
-
-              <div className="space-y-2">
-                {harvestData.harvests.items.map((harvest: any) => (
-                  <div
-                    key={harvest.id}
-                    className="bg-gray-50 dark:bg-gray-800 p-3 rounded"
-                  >
-                    <div className="text-sm font-medium">
-                      {harvest.quantity} {harvest.unit} - Grade{" "}
-                      {harvest.quality_grade}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Status: {harvest.status}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      TX: {harvest.hcs_transaction_id}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+        {/* Toggle Controls */}
+        <div className="flex gap-2">
+          <Button
+            onClick={enableDemoMode}
+            disabled={isDemoMode}
+            variant={isDemoMode ? "outline" : "default"}
+            className="flex-1"
+          >
+            Enable Demo Mode
+          </Button>
+          <Button
+            onClick={disableDemoMode}
+            disabled={!isDemoMode}
+            variant={!isDemoMode ? "outline" : "default"}
+            className="flex-1"
+          >
+            Enable Live Mode
+          </Button>
         </div>
 
-        {/* Users */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 className="text-lg font-semibold mb-3">Farmers</h2>
-
-          {userLoading && (
-            <div className="text-sm text-gray-500">Loading...</div>
-          )}
-
-          {userError && (
-            <div className="text-sm text-red-600">
-              Error: {userError.message}
-            </div>
-          )}
-
-          {userData && (
-            <>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Showing {userData.users.items.length} of {userData.users.total}{" "}
-                farmers
-              </div>
-
-              <div className="space-y-2">
-                {userData.users.items.map((user: any) => (
-                  <div
-                    key={user.id}
-                    className="bg-gray-50 dark:bg-gray-800 p-3 rounded"
-                  >
-                    <div className="text-sm font-medium">{user.full_name}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {user.farm_name}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {user.hedera_account_id}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+        {/* Information */}
+        <div className="text-xs text-gray-600 space-y-1">
+          <p>
+            💡 <strong>Tip:</strong> Toggle changes are saved to localStorage
+            and persist across sessions.
+          </p>
+          <p>
+            🔄 <strong>Reset:</strong> Clear localStorage or change the .env
+            variable to reset to default.
+          </p>
         </div>
-      </div>
-
-      {/* Instructions */}
-      <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-        <h3 className="text-sm font-semibold mb-2">💡 Try This</h3>
-        <ul className="text-sm space-y-1 list-disc list-inside">
-          <li>Toggle demo mode to see the difference</li>
-          <li>Enable latency simulation to see loading states</li>
-          <li>Increase error rate to test error handling</li>
-          <li>Check the browser console for GraphQL operations</li>
-        </ul>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

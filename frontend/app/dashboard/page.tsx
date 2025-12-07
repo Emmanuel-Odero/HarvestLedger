@@ -3,7 +3,8 @@
 import { useAuth } from "@/lib/auth-context";
 import { useMutation } from "@apollo/client";
 import { RECORD_HARVEST } from "@/lib/graphql/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -15,10 +16,35 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+  const router = useRouter();
   const [recordHarvest] = useMutation(RECORD_HARVEST);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push("/auth/signin?type=signin");
+    }
+  }, [user, isLoading, router]);
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!user) {
+    return null;
+  }
 
   const handleTestHarvest = async () => {
     try {
@@ -63,8 +89,7 @@ export default function Dashboard() {
                   Welcome to HarvestLedger Dashboard
                 </h1>
                 <p className="text-gray-600 mt-2">
-                  Connected with {user?.walletType} wallet:{" "}
-                  {user?.hederaAccountId}
+                  Connected wallet: {user?.walletAddress}
                 </p>
               </div>
               <Button onClick={logout} variant="destructive">
@@ -85,18 +110,26 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Hedera Account ID
+                    Wallet Address
                   </label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {user?.hederaAccountId}
+                  <p className="mt-1 text-sm text-gray-900 break-all">
+                    {user?.walletAddress}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Wallet Type
+                    Email
                   </label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {user?.walletType}
+                    {user?.email || "Not set"}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Name
+                  </label>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {user?.name || "Not set"}
                   </p>
                 </div>
                 <div>
@@ -107,14 +140,13 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Status
+                    Email Verified
                   </label>
-                  <div className="mt-1 flex space-x-2">
-                    <Badge variant={user?.isActive ? "default" : "destructive"}>
-                      {user?.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                    <Badge variant={user?.isVerified ? "default" : "secondary"}>
-                      {user?.isVerified ? "Verified" : "Unverified"}
+                  <div className="mt-1">
+                    <Badge
+                      variant={user?.isEmailVerified ? "default" : "secondary"}
+                    >
+                      {user?.isEmailVerified ? "Verified" : "Not Verified"}
                     </Badge>
                   </div>
                 </div>
