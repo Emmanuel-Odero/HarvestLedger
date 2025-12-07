@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,14 +11,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Leaf,
-  Shield,
-  BarChart3,
-  Globe,
   CheckCircle,
   ArrowRight,
   Play,
-  Users,
-  TrendingUp,
+  Award,
+  Target,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -75,12 +73,8 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20">
-        <div className="flex flex-col lg:flex-row items-center justify-between">
-          <div className="lg:w-1/2 mb-12 lg:mb-0">
-            <Badge className="mb-4 bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200">
-              🚀 Revolutionizing Agriculture
-            </Badge>
-
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+          <div className="lg:w-1/2">
             <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
               Modern Farming
               <span className="block bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
@@ -90,8 +84,9 @@ export default function LandingPage() {
 
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
               Track, verify, and optimize your agricultural supply chain with
-              our blockchain-powered ledger. Ensure transparency from seed to
-              shelf while maximizing your profits.
+              our blockchain-powered ledger. Now with <strong>HarvestLedger</strong> — AI-powered 
+              credit scoring that gives Kenya&apos;s smallholder farmers access to loans 
+              without traditional credit histories.
             </p>
 
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
@@ -132,64 +127,16 @@ export default function LandingPage() {
           </div>
 
           <div className="lg:w-1/2 relative">
-            <div className="relative z-10 bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
-              <div className="grid grid-cols-2 gap-6">
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-50 to-green-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-emerald-700">
-                      <BarChart3 className="h-6 w-6 mr-2" />
-                      Yield Tracking
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-emerald-600">
-                      Real-time monitoring of crop yields and quality metrics
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-orange-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-amber-700">
-                      <Shield className="h-6 w-6 mr-2" />
-                      Blockchain Security
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-amber-600">
-                      Immutable records on Hedera Hashgraph
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-blue-700">
-                      <Globe className="h-6 w-6 mr-2" />
-                      Supply Chain
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-blue-600">
-                      End-to-end traceability from farm to consumer
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-pink-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center text-purple-700">
-                      <TrendingUp className="h-6 w-6 mr-2" />
-                      Profit Analytics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-purple-600">
-                      Smart insights for better financial decisions
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </div>
+            {/* Hero Image */}
+            <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl">
+              <Image
+                src="/farm-photos/women tea farmers.svg"
+                alt="Kenyan tea farmers working in the field"
+                width={600}
+                height={450}
+                className="w-full h-auto object-cover"
+                priority
+              />
             </div>
 
             {/* Background decorative elements */}
@@ -234,9 +181,6 @@ export default function LandingPage() {
       {/* Features Section */}
       <section id="features" className="container mx-auto px-6 py-20">
         <div className="text-center mb-16">
-          <Badge className="mb-4 bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200">
-            ✨ Powerful Features
-          </Badge>
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Everything You Need for Modern Farming
           </h2>
@@ -253,10 +197,7 @@ export default function LandingPage() {
               className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <CardHeader>
-                <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg mb-4">
-                  <feature.icon className="h-6 w-6 text-white" />
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
+                <CardTitle className="text-xl text-emerald-700">{feature.title}</CardTitle>
                 <CardDescription className="text-lg">
                   {feature.description}
                 </CardDescription>
@@ -266,15 +207,147 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How HarvestLedger Works */}
+      <section id="how-it-works" className="bg-gradient-to-br from-emerald-50 to-green-50 py-20">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              From Farm Data to Loan Access
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              A transparent, AI-powered process that turns your farming success into creditworthiness
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {howItWorks.map((step, index) => (
+              <div key={index} className="relative">
+                <Card className="border-0 shadow-lg h-full bg-white">
+                  <CardHeader>
+                    <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full text-white font-bold text-lg mb-4">
+                      {index + 1}
+                    </div>
+                    <CardTitle className="text-lg">{step.title}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {step.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm text-gray-600">
+                      {step.details.map((detail, i) => (
+                        <li key={i} className="flex items-start">
+                          <span className="text-emerald-500 mr-2">•</span>
+                          {detail}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* HarvestLedger NFT Card Section */}
+      <section className="container mx-auto px-6 py-20">
+        <div className="flex flex-col lg:flex-row items-center gap-12">
+          <div className="lg:w-1/2">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Your Farm Performance = Your Credit Score
+            </h2>
+            <p className="text-xl text-gray-600 mb-6">
+              Each farmer gets a Credit Score NFT that lives permanently on the Cardano 
+              blockchain, updates every 90 days, and can be used to access decentralized loans.
+            </p>
+            <ul className="space-y-3 text-gray-600">
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-emerald-500 mr-3 mt-0.5" />
+                <span>AI analyzes 30+ data points including satellite imagery, mobile money, and climate data</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-emerald-500 mr-3 mt-0.5" />
+                <span>Transparent SHAP explanations stored on IPFS</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-emerald-500 mr-3 mt-0.5" />
+                <span>Non-transferable NFT tied to your wallet</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-emerald-500 mr-3 mt-0.5" />
+                <span>Only ~$0.17 per score update</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="lg:w-1/2">
+            {/* Credit Score NFT Card */}
+            <div className="bg-gradient-to-br from-emerald-900 to-green-800 rounded-2xl shadow-2xl p-8 border border-emerald-700 text-white">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <div className="w-10 h-10 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
+                    <Award className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="font-bold text-lg">HarvestLedger NFT</span>
+                </div>
+                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500">
+                  Cardano
+                </Badge>
+              </div>
+              
+              <div className="text-center mb-6">
+                <div className="text-6xl font-bold text-amber-400 mb-2">72</div>
+                <div className="text-emerald-200">Credit Score / 100</div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-emerald-300 text-sm">Risk Level</div>
+                  <div className="font-semibold text-amber-300">Medium</div>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-emerald-300 text-sm">Valid Until</div>
+                  <div className="font-semibold">Jan 2026</div>
+                </div>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center text-emerald-200">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
+                  Cooperative member, improving NDVI
+                </div>
+                <div className="flex items-center text-emerald-200">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
+                  Good repayment history
+                </div>
+                <div className="flex items-center text-amber-200">
+                  <Target className="h-4 w-4 mr-2 text-amber-400" />
+                  Areas to improve: Farm size, rainfall
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-emerald-600 to-green-600 text-white">
-        <div className="container mx-auto px-6 py-20 text-center">
-          <h2 className="text-4xl font-bold mb-4">
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="/farm-photos/man and woman digging.svg"
+            alt="Farmers working in the field"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/90 to-green-800/80" />
+        </div>
+        <div className="container mx-auto px-6 py-24 text-center relative z-10">
+          <h2 className="text-4xl font-bold mb-4 text-white">
             Ready to Transform Your Farming Business?
           </h2>
           <p className="text-xl text-emerald-100 mb-8 max-w-2xl mx-auto">
             Join thousands of farmers who are already using HarvestLedger to
-            optimize their operations and increase profits.
+            optimize their operations, access credit, and increase profits.
           </p>
           <Button
             size="lg"
@@ -325,34 +398,71 @@ export default function LandingPage() {
   );
 }
 
+const howItWorks = [
+  {
+    title: "AI Credit Scoring",
+    description: "Off-chain analysis using LightGBM",
+    details: [
+      "Satellite imagery (NDVI crop health)",
+      "Mobile money transactions",
+      "Asset ownership data",
+      "Generates score 0-100 with SHAP explanations",
+    ],
+  },
+  {
+    title: "NFT Minting",
+    description: "On-chain credit score storage",
+    details: [
+      "Authorized oracle mints Credit Score NFT",
+      "Metadata stored on Cardano blockchain",
+      "Full details on IPFS",
+      "Non-transferable, tied to wallet",
+    ],
+  },
+  {
+    title: "Loan Access",
+    description: "DeFi lending with smart contracts",
+    details: [
+      "Request loan using Score NFT",
+      "DeFi pool validates score ≥ 65",
+      "Plutus smart contract locks funds",
+      "Milestone-based disbursement",
+    ],
+  },
+  {
+    title: "Score Updates",
+    description: "Continuous improvement cycle",
+    details: [
+      "Payments tracked on-chain",
+      "Good repayment = higher score",
+      "New NFT minted, old one burned",
+      "Builds permanent credit history",
+    ],
+  },
+];
+
 const features = [
   {
-    icon: BarChart3,
     title: "Smart Analytics",
     description: "Advanced insights into crop performance and market trends",
   },
   {
-    icon: Shield,
     title: "Blockchain Security",
     description: "Tamper-proof records on Hedera Hashgraph network",
   },
   {
-    icon: Globe,
     title: "Supply Chain Tracking",
     description: "Complete visibility from planting to distribution",
   },
   {
-    icon: Users,
     title: "Stakeholder Management",
     description: "Connect with buyers, suppliers, and partners seamlessly",
   },
   {
-    icon: TrendingUp,
     title: "Profit Optimization",
     description: "Data-driven recommendations to maximize your revenue",
   },
   {
-    icon: Leaf,
     title: "Sustainable Farming",
     description: "Tools to track and improve your environmental impact",
   },
