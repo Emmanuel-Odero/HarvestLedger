@@ -24,6 +24,10 @@ python-multipart==0.0.6
 hedera-sdk-py
 web3==6.11.3
 
+# Cardano Blockchain SDK
+pycardano>=0.11.0
+blockfrost-python>=0.6.0
+
 # HTTP clients
 httpx==0.25.2
 requests==2.31.0
