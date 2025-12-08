@@ -2,20 +2,21 @@
  * Cardano Wallet Connect Component
  *
  * Displays wallet selection UI and shows connection status and balance.
- * Requirements: 1.1, 1.3
+ * Uses lazy loading to prevent WASM loading errors during SSR.
+ * Requirements: 1.1, 1.3, 4.1, 4.4, 4.5
  */
 
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  CardanoWalletConnector,
+import type {
+  CardanoWalletConnectorEnhanced,
   CardanoWalletType,
   WalletConnection,
   WalletBalance,
   WalletConnectionError,
   WalletErrorCode,
-} from "@/lib/cardano-wallet-connector";
+} from "@/lib/cardano-wallet-connector-enhanced";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,17 +32,52 @@ export function CardanoWalletConnect({
   onDisconnect,
   className = "",
 }: CardanoWalletConnectProps) {
-  const [connector] = useState(() => new CardanoWalletConnector());
+  const [connector, setConnector] =
+    useState<CardanoWalletConnectorEnhanced | null>(null);
   const [connection, setConnection] = useState<WalletConnection | null>(null);
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [installedWallets, setInstalledWallets] = useState<CardanoWalletType[]>(
     []
   );
 
+  // Lazy load the connector when component mounts
+  useEffect(() => {
+    const loadConnector = async () => {
+      if (typeof window === "undefined") return;
+
+      setIsInitializing(true);
+      try {
+        // Dynamically import the enhanced connector
+        const { CardanoWalletConnectorEnhanced } = await import(
+          "@/lib/cardano-wallet-connector-enhanced"
+        );
+
+        const newConnector = new CardanoWalletConnectorEnhanced({
+          lazyLoad: true,
+          network: "preprod",
+        });
+
+        setConnector(newConnector);
+      } catch (err) {
+        console.error("Failed to load Cardano wallet connector:", err);
+        setError(
+          "Failed to initialize wallet connector. Please refresh the page and try again."
+        );
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    loadConnector();
+  }, []);
+
   // Check which wallets are installed
   useEffect(() => {
+    if (!connector) return;
+
     const checkInstalledWallets = async () => {
       const supportedWallets = connector.getSupportedWallets();
       const installed: CardanoWalletType[] = [];
@@ -61,6 +97,11 @@ export function CardanoWalletConnect({
 
   // Handle wallet connection
   const handleConnect = async (walletType: CardanoWalletType) => {
+    if (!connector) {
+      setError("Wallet connector not initialized. Please refresh the page.");
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
 
@@ -74,6 +115,11 @@ export function CardanoWalletConnect({
 
       onConnect?.(conn);
     } catch (err) {
+      // Dynamically import error types for checking
+      const { WalletConnectionError } = await import(
+        "@/lib/cardano-wallet-connector-enhanced"
+      );
+
       if (err instanceof WalletConnectionError) {
         setError(getErrorMessage(err));
       } else {
@@ -87,6 +133,8 @@ export function CardanoWalletConnect({
 
   // Handle wallet disconnection
   const handleDisconnect = async () => {
+    if (!connector) return;
+
     await connector.disconnectWallet();
     setConnection(null);
     setBalance(null);
@@ -95,16 +143,21 @@ export function CardanoWalletConnect({
   };
 
   // Get user-friendly error message
-  const getErrorMessage = (error: WalletConnectionError): string => {
-    switch (error.code) {
-      case WalletErrorCode.NOT_INSTALLED:
+  const getErrorMessage = (error: any): string => {
+    // Import WalletErrorCode dynamically for comparison
+    const errorCode = error.code;
+
+    switch (errorCode) {
+      case "WALLET_NOT_INSTALLED":
         return `Wallet not installed. Please install the ${error.details?.walletName} browser extension.`;
-      case WalletErrorCode.USER_REJECTED:
+      case "USER_REJECTED":
         return "Connection was cancelled. Please try again if you want to connect.";
-      case WalletErrorCode.NETWORK_MISMATCH:
+      case "NETWORK_MISMATCH":
         return "Network mismatch. Please switch to the correct network in your wallet.";
-      case WalletErrorCode.CONNECTION_TIMEOUT:
+      case "CONNECTION_TIMEOUT":
         return "Connection timed out. Please try again.";
+      case "INITIALIZATION_FAILED":
+        return "Failed to initialize wallet connector. Please refresh the page and try again.";
       default:
         return error.message || "An unknown error occurred.";
     }
@@ -138,6 +191,21 @@ export function CardanoWalletConnect({
   const getWalletIcon = (walletType: CardanoWalletType): string => {
     return `🔷`; // Placeholder icon
   };
+
+  // Show loading state while initializing connector
+  if (isInitializing) {
+    return (
+      <Card className={`p-6 ${className}`}>
+        <h3 className="text-lg font-semibold mb-4">Connect Cardano Wallet</h3>
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-sm text-gray-600">
+            Initializing wallet connector...
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   // Render wallet selection UI
   if (!connection) {
@@ -188,7 +256,7 @@ export function CardanoWalletConnect({
               Please install a Cardano wallet extension to continue
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              {connector.getSupportedWallets().map((wallet) => (
+              {connector?.getSupportedWallets().map((wallet) => (
                 <a
                   key={wallet}
                   href={`https://www.${wallet}.io`}
