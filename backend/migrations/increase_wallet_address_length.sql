@@ -9,3 +9,6 @@ ALTER TABLE user_wallets
 -- Update wallet_linking_requests table
 ALTER TABLE wallet_linking_requests 
     ALTER COLUMN new_wallet_address TYPE VARCHAR(255);
+
+
+
