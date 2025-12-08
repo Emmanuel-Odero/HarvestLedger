@@ -89,6 +89,11 @@ class User:
     def is_email_verified(self) -> Optional[bool]:
         """Alias for email_verified for frontend compatibility"""
         return self.email_verified
+    
+    @strawberry.field(name="fullName")
+    def full_name_camel_case(self) -> Optional[str]:
+        """Alias for full_name as fullName for frontend compatibility"""
+        return self.full_name
 
 
 @strawberry.type
