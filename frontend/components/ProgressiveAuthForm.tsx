@@ -351,7 +351,11 @@ export default function ProgressiveAuthForm({
             return (
               <button
                 key={wallet.type}
-                onClick={() => handleLoginWalletConnect(wallet.type)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleLoginWalletConnect(wallet.type);
+                }}
                 disabled={loading || !isInstalled}
                 className={`w-full p-4 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-4 ${
                   isInstalled
@@ -564,7 +568,11 @@ export default function ProgressiveAuthForm({
             return (
               <button
                 key={wallet.type}
-                onClick={() => handleRegisterWalletConnect(wallet.type)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleRegisterWalletConnect(wallet.type);
+                }}
                 disabled={loading || !isInstalled}
                 className={`w-full p-4 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-4 ${
                   isInstalled
