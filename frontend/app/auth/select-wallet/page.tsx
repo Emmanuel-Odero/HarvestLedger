@@ -49,7 +49,7 @@ export default function SelectWalletPage() {
 
     try {
       // Connect to wallet
-      const walletInfo = await WalletConnector.connect(walletType);
+      const walletInfo = await WalletConnector.connectWallet(walletType);
 
       if (!walletInfo) {
         throw new Error("Failed to connect to wallet");
@@ -65,21 +65,18 @@ export default function SelectWalletPage() {
       // Link email to wallet
       const { data } = await linkEmailToWallet({
         variables: {
-          input: {
-            email,
-            walletAddress: walletInfo.address,
-            walletType: walletType,
-            signature: signatureResult.signature,
-          },
+          email,
+          walletAddress: walletInfo.address,
+          walletType: walletType,
         },
       });
 
       if (data?.linkEmailToWallet?.success) {
-        // Redirect to complete registration
+        // Redirect to complete registration with wallet info
         router.push(
           `/auth/complete-registration?email=${encodeURIComponent(
             email
-          )}&wallet=${walletInfo.address}`
+          )}&wallet=${walletInfo.address}&walletType=${walletType}`
         );
       } else {
         setError(data?.linkEmailToWallet?.message || "Failed to link wallet");
@@ -216,7 +213,11 @@ export default function SelectWalletPage() {
             return (
               <button
                 key={walletType}
-                onClick={() => handleWalletConnect(walletType)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleWalletConnect(walletType);
+                }}
                 disabled={loading}
                 className={`w-full p-5 border-2 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-4 ${
                   isInstalled
