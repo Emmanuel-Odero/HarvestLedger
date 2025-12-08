@@ -53,6 +53,7 @@ Issued At: {issued_at}"""
     async def verify_nonce(nonce: str, address: str) -> bool:
         """Verify and consume nonce (one-time use)"""
         stored_address = await redis_client.get_nonce(nonce)
+        print(f"🔍 Nonce verification: nonce={nonce[:10]}..., address={address[:20]}..., stored={stored_address[:20] if stored_address else 'None'}...")
         return stored_address == address
     
     @staticmethod
