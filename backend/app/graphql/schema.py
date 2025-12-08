@@ -32,15 +32,18 @@ def get_context(request: Request, db: Session = None):
             temp_db = SessionLocal()
             try:
                 user_id = payload.get("sub")
-                hedera_account_id = payload.get("hedera_account_id")
+                hedera_account_id = payload.get("hedera_account_id") or payload.get("wallet_address")
                 
-                if hedera_account_id:
-                    current_user = temp_db.query(UserModel).filter(
-                        UserModel.hedera_account_id == hedera_account_id
-                    ).first()
-                elif user_id:
+                # Try user_id first (most reliable)
+                if user_id:
                     current_user = temp_db.query(UserModel).filter(
                         UserModel.id == user_id
+                    ).first()
+                
+                # Fallback to hedera_account_id if user not found
+                if not current_user and hedera_account_id:
+                    current_user = temp_db.query(UserModel).filter(
+                        UserModel.hedera_account_id == hedera_account_id
                     ).first()
             finally:
                 temp_db.close()
