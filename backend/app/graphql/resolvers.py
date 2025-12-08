@@ -35,7 +35,12 @@ class Query:
         message = WalletAuthenticator.create_siwe_message(address, nonce)
         
         # Store nonce in Redis
-        await WalletAuthenticator.store_nonce(nonce, address)
+        try:
+            await WalletAuthenticator.store_nonce(nonce, address)
+            print(f"✅ Nonce stored for address: {address[:20]}...")
+        except Exception as e:
+            print(f"❌ Failed to store nonce in Redis: {e}")
+            # Continue anyway - we'll handle this in verification
         
         return message
     
@@ -337,6 +342,7 @@ class Mutation:
             
             if not is_valid or not account_id:
                 # Return error response instead of raising exception
+                print(f"❌ Wallet authentication failed: is_valid={is_valid}, account_id={account_id}")
                 return AuthResponse(
                     success=False,
                     message="Invalid wallet signature",
@@ -420,11 +426,14 @@ class Mutation:
                     db.refresh(user)
                     print(f"✅ New user created: {user.id}")
             
-            # Create JWT token
+            # Create JWT token with consistent payload
             token_data = {
                 "sub": str(user.id),
-                "wallet_address": account_id,
-                "wallet_type": input.wallet_type.value
+                "hedera_account_id": account_id,
+                "wallet_address": account_id,  # Keep for backward compatibility
+                "wallet_type": input.wallet_type.value,
+                "email_verified": user.email_verified or False,
+                "registration_complete": user.registration_complete or False
             }
             access_token = create_access_token(data=token_data)
             
@@ -1208,7 +1217,9 @@ class Mutation:
                 "sub": str(user.id),
                 "hedera_account_id": user.hedera_account_id,
                 "role": user.role.value,
-                "session_token": session.session_token if session else None
+                "session_token": session.session_token if session else None,
+                "email_verified": user.email_verified,
+                "registration_complete": user.registration_complete
             }
             access_token = create_access_token(data=token_data)
             
