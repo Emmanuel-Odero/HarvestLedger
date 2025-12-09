@@ -56,7 +56,7 @@ export default function Dashboard() {
       {/* Welcome Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.name || user?.fullName || "User"}!
+          Welcome back, {user?.fullName || "User"}!
         </h1>
         <p className="text-gray-600 mt-2">
           Here's what's happening with your agricultural operations today.
@@ -92,7 +92,7 @@ export default function Dashboard() {
                 Name
               </label>
               <p className="mt-1 text-sm text-gray-900">
-                {user?.name || "Not set"}
+                {user?.fullName || "Not set"}
               </p>
             </div>
             <div>

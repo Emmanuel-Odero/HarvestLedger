@@ -78,10 +78,12 @@ export default function CompleteRegistrationPage() {
     // Fallback: try to get from URL params
     if (!walletAddress) {
       walletAddress =
-        searchParams.get("wallet") || searchParams.get("walletAddress");
+        searchParams.get("wallet") ||
+        searchParams.get("walletAddress") ||
+        undefined;
     }
     if (!walletType) {
-      walletType = searchParams.get("walletType");
+      walletType = searchParams.get("walletType") || undefined;
     }
 
     // Fallback: try to get from localStorage
