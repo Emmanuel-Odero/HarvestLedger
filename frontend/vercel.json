@@ -1,0 +1,15 @@
+{
+    "rewrites": [
+        {
+            "source": "/login",
+            "destination": "/auth/signin"
+        }
+    ],
+    "redirects": [
+        {
+            "source": "/login",
+            "destination": "/auth/signin",
+            "permanent": false
+        }
+    ]
+}
