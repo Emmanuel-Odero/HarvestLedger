@@ -149,7 +149,11 @@ export default function ProgressiveAuthForm({
       setLoading(true);
       setError(null);
       // For login, we use the existing wallet authentication
-      await connectWallet(walletType, "signin");
+      if (connectWallet) {
+        await connectWallet(walletType);
+      } else {
+        throw new Error("Wallet connection not available");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed");
     } finally {
@@ -240,7 +244,11 @@ export default function ProgressiveAuthForm({
       }
 
       // Connect wallet
-      await connectWallet(walletType, "onboarding");
+      if (connectWallet) {
+        await connectWallet(walletType);
+      } else {
+        throw new Error("Wallet connection not available");
+      }
 
       // After wallet connection, the auth context will redirect appropriately
       // The backend authenticate_multi_wallet will handle the user creation
