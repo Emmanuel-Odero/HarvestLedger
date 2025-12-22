@@ -13,13 +13,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export function NotificationCenter() {
-  const {
-    notifications,
-    markNotificationRead,
-    clearNotifications,
-    unreadCount,
-  } = useNotifications();
+  const { notifications, setNotifications } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+
+  const markNotificationRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification
+      )
+    );
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -134,16 +143,6 @@ export function NotificationCenter() {
                           <p className="text-xs text-gray-500">
                             {formatTimestamp(notification.timestamp)}
                           </p>
-                          {notification.actionLabel &&
-                            notification.actionUrl && (
-                              <Button
-                                size="sm"
-                                variant="link"
-                                className="text-xs p-0 h-auto mt-1"
-                              >
-                                {notification.actionLabel} →
-                              </Button>
-                            )}
                         </div>
                       </div>
                     </div>
