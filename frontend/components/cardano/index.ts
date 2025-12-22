@@ -5,5 +5,6 @@
  */
 
 export { CardanoWalletConnect } from "./CardanoWalletConnect";
+export { CardanoWalletErrorBoundary } from "./CardanoWalletErrorBoundary";
 export { CardanoTokenMinting } from "./CardanoTokenMinting";
 export { CardanoTokenTransfer } from "./CardanoTokenTransfer";

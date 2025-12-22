@@ -1,67 +1,89 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { useMutation } from '@apollo/client'
-import { WalletConnector, WalletType, WalletConnection, WalletSignature } from '../lib/wallet-utils'
-import { useAuth } from '../lib/auth-context'
+import React, { useState } from "react";
+import { useMutation, gql } from "@apollo/client";
+import {
+  WalletConnector,
+  WalletType,
+  WalletInfo,
+  SignatureResult,
+} from "../lib/wallet-utils";
+import { useAuth } from "../lib/auth-context";
 
-const LINK_WALLET = `
+const LINK_WALLET = gql`
   mutation LinkWallet($input: WalletLinkingPayload!, $userId: String!) {
     linkWallet(input: $input, userId: $userId)
   }
-`
+`;
 
 interface WalletLinkingModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSuccess: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
-export function WalletLinkingModal({ isOpen, onClose, onSuccess }: WalletLinkingModalProps) {
-  const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
-  
-  const [linkWallet] = useMutation(LINK_WALLET)
+export function WalletLinkingModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: WalletLinkingModalProps) {
+  const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const [linkWallet] = useMutation(LINK_WALLET);
 
   const availableWallets = [
-    { type: WalletType.HASHPACK, name: 'HashPack', icon: '/icons/hashpack.svg' },
-    { type: WalletType.BLADE, name: 'Blade Wallet', icon: '/icons/blade.svg' },
-    { type: WalletType.KABILA, name: 'Kabila', icon: '/icons/kabila.svg' },
-    { type: WalletType.METAMASK, name: 'MetaMask', icon: '/icons/metamask.svg' },
-    { type: WalletType.PORTAL, name: 'Hedera Portal', icon: '/icons/portal.svg' }
-  ]
+    {
+      type: WalletType.HASHPACK,
+      name: "HashPack",
+      icon: "/icons/hashpack.svg",
+    },
+    { type: WalletType.BLADE, name: "Blade Wallet", icon: "/icons/blade.svg" },
+    { type: WalletType.KABILA, name: "Kabila", icon: "/icons/kabila.svg" },
+    {
+      type: WalletType.METAMASK,
+      name: "MetaMask",
+      icon: "/icons/metamask.svg",
+    },
+    {
+      type: WalletType.PORTAL,
+      name: "Hedera Portal",
+      icon: "/icons/portal.svg",
+    },
+  ];
 
   const handleLinkWallet = async (walletType: WalletType) => {
-    if (!user) return
+    if (!user) return;
 
     try {
-      setIsConnecting(true)
-      setError(null)
+      setIsConnecting(true);
+      setError(null);
 
       // Check if wallet is available
-      const isAvailable = await WalletConnector.isWalletAvailable(walletType)
+      const isAvailable = await WalletConnector.isWalletAvailable(walletType);
       if (!isAvailable) {
-        throw new Error(`${WalletConnector.getWalletDisplayName(walletType)} is not installed`)
+        throw new Error(`${walletType} wallet is not installed`);
       }
 
       // Connect to the new wallet
-      const newWalletConnection: WalletConnection = await WalletConnector.connectWallet(walletType)
+      const newWalletConnection: WalletInfo =
+        await WalletConnector.connectWallet(walletType);
 
       // Create linking message
-      const linkingMessage = `Link wallet ${newWalletConnection.address} to account ${user.id} at ${new Date().toISOString()}`
+      const linkingMessage = `Link wallet ${
+        newWalletConnection.address
+      } to account ${user.id} at ${new Date().toISOString()}`;
 
       // Sign with new wallet
-      const newWalletSignature: WalletSignature = await WalletConnector.signMessage(
-        linkingMessage, 
-        newWalletConnection
-      )
+      const newWalletSignature: SignatureResult =
+        await WalletConnector.signMessage(walletType, linkingMessage);
 
       // For primary wallet signature, we need to get the user's current primary wallet
       // This would typically be done by connecting to their primary wallet
       // For now, we'll simulate this step
-      const primaryWalletSignature = "placeholder_primary_signature"
+      const primaryWalletSignature = "placeholder_primary_signature";
 
       // Submit linking request
       const { data } = await linkWallet({
@@ -72,28 +94,29 @@ export function WalletLinkingModal({ isOpen, onClose, onSuccess }: WalletLinking
             newWalletSignature: newWalletSignature.signature,
             primaryWalletSignature: primaryWalletSignature,
             message: linkingMessage,
-            publicKey: newWalletConnection.publicKey
+            publicKey: newWalletConnection.publicKey,
           },
-          userId: user.id
-        }
-      })
+          userId: user.id,
+        },
+      });
 
       if (data?.linkWallet) {
-        onSuccess()
-        onClose()
+        onSuccess();
+        onClose();
       } else {
-        throw new Error('Failed to link wallet')
+        throw new Error("Failed to link wallet");
       }
-
     } catch (error) {
-      console.error('Wallet linking failed:', error)
-      setError(error instanceof Error ? error.message : 'Failed to link wallet')
+      console.error("Wallet linking failed:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to link wallet"
+      );
     } finally {
-      setIsConnecting(false)
+      setIsConnecting(false);
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -109,7 +132,9 @@ export function WalletLinkingModal({ isOpen, onClose, onSuccess }: WalletLinking
         </div>
 
         <p className="text-gray-600 mb-6">
-          Connect and verify a new wallet to link it to your account. You'll need to sign a message with both your current primary wallet and the new wallet.
+          Connect and verify a new wallet to link it to your account. You'll
+          need to sign a message with both your current primary wallet and the
+          new wallet.
         </p>
 
         {error && (
@@ -126,12 +151,12 @@ export function WalletLinkingModal({ isOpen, onClose, onSuccess }: WalletLinking
               disabled={isConnecting}
               className="w-full flex items-center p-3 border border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <img 
-                src={wallet.icon} 
+              <img
+                src={wallet.icon}
                 alt={wallet.name}
                 className="w-8 h-8 mr-3"
                 onError={(e) => {
-                  e.currentTarget.src = '/icons/wallet.svg'
+                  e.currentTarget.src = "/icons/wallet.svg";
                 }}
               />
               <span className="font-medium">{wallet.name}</span>
@@ -154,5 +179,5 @@ export function WalletLinkingModal({ isOpen, onClose, onSuccess }: WalletLinking
         </div>
       </div>
     </div>
-  )
+  );
 }

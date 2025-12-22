@@ -149,7 +149,11 @@ export default function ProgressiveAuthForm({
       setLoading(true);
       setError(null);
       // For login, we use the existing wallet authentication
-      await connectWallet(walletType, "signin");
+      if (connectWallet) {
+        await connectWallet(walletType);
+      } else {
+        throw new Error("Wallet connection not available");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed");
     } finally {
@@ -240,7 +244,11 @@ export default function ProgressiveAuthForm({
       }
 
       // Connect wallet
-      await connectWallet(walletType, "onboarding");
+      if (connectWallet) {
+        await connectWallet(walletType);
+      } else {
+        throw new Error("Wallet connection not available");
+      }
 
       // After wallet connection, the auth context will redirect appropriately
       // The backend authenticate_multi_wallet will handle the user creation
@@ -351,7 +359,11 @@ export default function ProgressiveAuthForm({
             return (
               <button
                 key={wallet.type}
-                onClick={() => handleLoginWalletConnect(wallet.type)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleLoginWalletConnect(wallet.type);
+                }}
                 disabled={loading || !isInstalled}
                 className={`w-full p-4 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-4 ${
                   isInstalled
@@ -564,7 +576,11 @@ export default function ProgressiveAuthForm({
             return (
               <button
                 key={wallet.type}
-                onClick={() => handleRegisterWalletConnect(wallet.type)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleRegisterWalletConnect(wallet.type);
+                }}
                 disabled={loading || !isInstalled}
                 className={`w-full p-4 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-4 ${
                   isInstalled

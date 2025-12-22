@@ -134,8 +134,9 @@ export default function UserJourneyPage() {
         {/* Role Badge */}
         <div className="mb-6">
           <Badge className="text-lg px-4 py-2">
-            {currentRole === "farmer" ? "🌾" : "🏢"} Current Role:{" "}
-            {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}
+            {currentRole === "FARMER" ? "🌾" : "🏢"} Current Role:{" "}
+            {currentRole.charAt(0).toUpperCase() +
+              currentRole.slice(1).toLowerCase()}
           </Badge>
         </div>
 
@@ -180,7 +181,7 @@ export default function UserJourneyPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {currentRole === "farmer" && (
+                      {currentRole === "FARMER" && (
                         <>
                           <div className="flex gap-3">
                             <div className="text-2xl">🔒</div>
@@ -210,7 +211,7 @@ export default function UserJourneyPage() {
                           </div>
                         </>
                       )}
-                      {currentRole === "buyer" && (
+                      {currentRole === "BUYER" && (
                         <>
                           <div className="flex gap-3">
                             <div className="text-2xl">✅</div>

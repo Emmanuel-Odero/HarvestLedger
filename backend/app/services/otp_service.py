@@ -165,14 +165,25 @@ class OTPService:
             email_sent = await OTPService.send_otp_email(email, otp)
             
             if not email_sent:
-                logger.error(f"Failed to send OTP email to {email}")
-                return False, "Failed to send verification email. Please try again."
+                logger.warning(f"Failed to send OTP email to {email} - Email service may not be configured")
+                # In development, log the OTP for testing
+                if settings.HEDERA_NETWORK == "testnet" or settings.CARDANO_NETWORK == "preprod":
+                    logger.warning(f"🔐 DEVELOPMENT MODE - OTP for {email}: {otp}")
+                    logger.warning("⚠️  Email service not available. For testing, use the OTP logged above.")
+                    # Still return success in dev mode so testing can continue
+                    return True, None
+                else:
+                    return False, "Failed to send verification email. Please check email service configuration."
             
             logger.info(f"OTP email sent successfully to {email}")
             return True, None
             
         except Exception as e:
             logger.error(f"Error generating/sending OTP for {email}: {str(e)}", exc_info=True)
+            # In development, still allow OTP to be used even if email fails
+            if settings.HEDERA_NETWORK == "testnet" or settings.CARDANO_NETWORK == "preprod":
+                logger.warning("⚠️  Email service error in development mode - OTP still stored in Redis")
+                return True, None
             return False, f"Error generating OTP: {str(e)}"
     
     @staticmethod

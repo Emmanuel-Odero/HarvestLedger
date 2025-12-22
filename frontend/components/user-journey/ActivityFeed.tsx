@@ -11,7 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export function ActivityFeed() {
-  const { activityFeed, clearActivityFeed } = useActivityFeed();
+  const { activityFeed, setActivityFeed } = useActivityFeed();
+
+  const clearActivityFeed = () => {
+    setActivityFeed([]);
+  };
 
   return (
     <Card>
@@ -38,25 +42,52 @@ export function ActivityFeed() {
           </div>
         ) : (
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {activityFeed.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="text-2xl flex-shrink-0">{activity.icon}</div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-sm text-gray-900">
-                    {activity.title}
-                  </h4>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {activity.description}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formatTimestamp(activity.timestamp)}
-                  </p>
+            {activityFeed.map((activity) => {
+              // Generate icon based on type and status
+              const getActivityIcon = (type: string, status: string) => {
+                if (status === "error") return "❌";
+                if (status === "pending") return "⏳";
+                if (status === "success") {
+                  switch (type.toLowerCase()) {
+                    case "harvest":
+                      return "🌾";
+                    case "token":
+                      return "🪙";
+                    case "sale":
+                      return "💰";
+                    case "verification":
+                      return "✅";
+                    default:
+                      return "📝";
+                  }
+                }
+                return "📝";
+              };
+
+              return (
+                <div
+                  key={activity.id}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="text-2xl flex-shrink-0">
+                    {getActivityIcon(activity.type, activity.status)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm text-gray-900">
+                      {activity.type.charAt(0).toUpperCase() +
+                        activity.type.slice(1)}{" "}
+                      Activity
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {activity.message}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formatTimestamp(activity.timestamp)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

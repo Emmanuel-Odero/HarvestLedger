@@ -65,9 +65,9 @@ async def get_current_user(
         if payload is None:
             raise credentials_exception
             
-        # Support both user_id (legacy) and hedera_account_id (new wallet auth)
+        # Support both user_id (legacy) and hedera_account_id/wallet_address (new wallet auth)
         user_id: str = payload.get("sub")
-        hedera_account_id: str = payload.get("hedera_account_id")
+        hedera_account_id: str = payload.get("hedera_account_id") or payload.get("wallet_address")
         
         if not user_id and not hedera_account_id:
             raise credentials_exception
@@ -75,12 +75,13 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
     
-    # Try to find user by hedera_account_id first (wallet auth), then by user_id (legacy)
+    # Try to find user by user_id first (most reliable), then by hedera_account_id
     user = None
-    if hedera_account_id:
-        user = db.query(User).filter(User.hedera_account_id == hedera_account_id).first()
-    elif user_id:
+    if user_id:
         user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user and hedera_account_id:
+        user = db.query(User).filter(User.hedera_account_id == hedera_account_id).first()
     
     if user is None:
         raise credentials_exception
@@ -102,13 +103,18 @@ async def get_current_user_optional(
         if payload is None:
             return None
             
-        hedera_account_id: str = payload.get("hedera_account_id")
         user_id: str = payload.get("sub")
+        hedera_account_id: str = payload.get("hedera_account_id") or payload.get("wallet_address")
         
+        # Try user_id first (most reliable)
+        if user_id:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                return user
+        
+        # Fallback to hedera_account_id
         if hedera_account_id:
             return db.query(User).filter(User.hedera_account_id == hedera_account_id).first()
-        elif user_id:
-            return db.query(User).filter(User.id == user_id).first()
             
         return None
     except:

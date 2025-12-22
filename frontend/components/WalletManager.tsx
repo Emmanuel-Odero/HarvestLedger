@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { useLazyQuery, useMutation } from '@apollo/client'
-import { WalletLinkingModal } from './WalletLinkingModal'
-import { useAuth } from '../lib/auth-context'
+import React, { useState, useEffect } from "react";
+import { useLazyQuery, useMutation, gql } from "@apollo/client";
+import { WalletLinkingModal } from "./WalletLinkingModal";
+import { useAuth } from "../lib/auth-context";
 
-const GET_USER_WALLETS = `
+const GET_USER_WALLETS = gql`
   query GetUserWallets($userId: String!) {
     getUserWallets(userId: $userId) {
       id
@@ -17,108 +17,108 @@ const GET_USER_WALLETS = `
       createdAt
     }
   }
-`
+`;
 
-const SET_PRIMARY_WALLET = `
+const SET_PRIMARY_WALLET = gql`
   mutation SetPrimaryWallet($userId: String!, $walletId: String!) {
     setPrimaryWallet(userId: $userId, walletId: $walletId)
   }
-`
+`;
 
 interface UserWallet {
-  id: string
-  walletAddress: string
-  walletType: string
-  isPrimary: boolean
-  firstUsedAt: string
-  lastUsedAt: string
-  createdAt: string
+  id: string;
+  walletAddress: string;
+  walletType: string;
+  isPrimary: boolean;
+  firstUsedAt: string;
+  lastUsedAt: string;
+  createdAt: string;
 }
 
 export function WalletManager() {
-  const [wallets, setWallets] = useState<UserWallet[]>([])
-  const [showLinkingModal, setShowLinkingModal] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const { user } = useAuth()
+  const [wallets, setWallets] = useState<UserWallet[]>([]);
+  const [showLinkingModal, setShowLinkingModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
-  const [getUserWallets] = useLazyQuery(GET_USER_WALLETS)
-  const [setPrimaryWallet] = useMutation(SET_PRIMARY_WALLET)
+  const [getUserWallets] = useLazyQuery(GET_USER_WALLETS);
+  const [setPrimaryWallet] = useMutation(SET_PRIMARY_WALLET);
 
   useEffect(() => {
     if (user) {
-      loadWallets()
+      loadWallets();
     }
-  }, [user])
+  }, [user]);
 
   const loadWallets = async () => {
-    if (!user) return
+    if (!user) return;
 
     try {
-      setIsLoading(true)
+      setIsLoading(true);
       const { data } = await getUserWallets({
-        variables: { userId: user.id }
-      })
+        variables: { userId: user.id },
+      });
 
       if (data?.getUserWallets) {
-        setWallets(data.getUserWallets)
+        setWallets(data.getUserWallets);
       }
     } catch (error) {
-      console.error('Failed to load wallets:', error)
+      console.error("Failed to load wallets:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSetPrimary = async (walletId: string) => {
-    if (!user) return
+    if (!user) return;
 
     try {
       const { data } = await setPrimaryWallet({
         variables: {
           userId: user.id,
-          walletId: walletId
-        }
-      })
+          walletId: walletId,
+        },
+      });
 
       if (data?.setPrimaryWallet) {
         // Refresh wallets list
-        await loadWallets()
+        await loadWallets();
       }
     } catch (error) {
-      console.error('Failed to set primary wallet:', error)
+      console.error("Failed to set primary wallet:", error);
     }
-  }
+  };
 
   const formatAddress = (address: string) => {
-    if (address.length <= 10) return address
-    return `${address.slice(0, 6)}...${address.slice(-4)}`
-  }
+    if (address.length <= 10) return address;
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
-  }
+    return new Date(dateString).toLocaleDateString();
+  };
 
   const getWalletIcon = (walletType: string) => {
     const iconMap: { [key: string]: string } = {
-      'HASHPACK': '/icons/hashpack.svg',
-      'BLADE': '/icons/blade.svg',
-      'KABILA': '/icons/kabila.svg',
-      'METAMASK': '/icons/metamask.svg',
-      'PORTAL': '/icons/portal.svg'
-    }
-    return iconMap[walletType] || '/icons/wallet.svg'
-  }
+      HASHPACK: "/icons/hashpack.svg",
+      BLADE: "/icons/blade.svg",
+      KABILA: "/icons/kabila.svg",
+      METAMASK: "/icons/metamask.svg",
+      PORTAL: "/icons/portal.svg",
+    };
+    return iconMap[walletType] || "/icons/wallet.svg";
+  };
 
   const getWalletName = (walletType: string) => {
     const nameMap: { [key: string]: string } = {
-      'HASHPACK': 'HashPack',
-      'BLADE': 'Blade Wallet',
-      'KABILA': 'Kabila',
-      'METAMASK': 'MetaMask',
-      'PORTAL': 'Hedera Portal'
-    }
-    return nameMap[walletType] || walletType
-  }
+      HASHPACK: "HashPack",
+      BLADE: "Blade Wallet",
+      KABILA: "Kabila",
+      METAMASK: "MetaMask",
+      PORTAL: "Hedera Portal",
+    };
+    return nameMap[walletType] || walletType;
+  };
 
   if (isLoading) {
     return (
@@ -136,7 +136,7 @@ export function WalletManager() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -155,8 +155,18 @@ export function WalletManager() {
         {wallets.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              <svg
+                className="w-8 h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
               </svg>
             </div>
             <p className="text-gray-500 mb-4">No wallets connected</p>
@@ -173,7 +183,9 @@ export function WalletManager() {
               <div
                 key={wallet.id}
                 className={`flex items-center justify-between p-4 border rounded-lg ${
-                  wallet.isPrimary ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                  wallet.isPrimary
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-200"
                 }`}
               >
                 <div className="flex items-center space-x-4">
@@ -182,12 +194,14 @@ export function WalletManager() {
                     alt={getWalletName(wallet.walletType)}
                     className="w-10 h-10"
                     onError={(e) => {
-                      e.currentTarget.src = '/icons/wallet.svg'
+                      e.currentTarget.src = "/icons/wallet.svg";
                     }}
                   />
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h4 className="font-medium">{getWalletName(wallet.walletType)}</h4>
+                      <h4 className="font-medium">
+                        {getWalletName(wallet.walletType)}
+                      </h4>
                       {wallet.isPrimary && (
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
                           Primary
@@ -213,8 +227,18 @@ export function WalletManager() {
                     </button>
                   )}
                   <button className="text-sm text-gray-400 hover:text-gray-600">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -225,13 +249,27 @@ export function WalletManager() {
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
           <div className="flex items-start space-x-3">
-            <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5 text-blue-600 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <div>
-              <h4 className="text-sm font-medium text-blue-900">Multi-Wallet Benefits</h4>
+              <h4 className="text-sm font-medium text-blue-900">
+                Multi-Wallet Benefits
+              </h4>
               <p className="text-sm text-blue-700 mt-1">
-                Link multiple wallets to your account for convenience. Use different wallets for different purposes while maintaining a single Harvest Ledger identity.
+                Link multiple wallets to your account for convenience. Use
+                different wallets for different purposes while maintaining a
+                single Harvest Ledger identity.
               </p>
             </div>
           </div>
@@ -244,5 +282,5 @@ export function WalletManager() {
         onSuccess={loadWallets}
       />
     </>
-  )
+  );
 }

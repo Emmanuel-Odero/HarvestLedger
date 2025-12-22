@@ -6,12 +6,21 @@
 
 "use client";
 
-import { useCurrentRole, UserRole } from "@/lib/user-journey-context";
+import {
+  useCurrentRole,
+  useScenario,
+  UserRole,
+} from "@/lib/user-journey-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function RoleSwitcher() {
-  const [currentRole, switchRole] = useCurrentRole();
+  const { currentRole, setCurrentRole } = useCurrentRole();
+  const { startScenario } = useScenario();
+
+  const switchRole = (role: UserRole) => {
+    setCurrentRole(role);
+  };
 
   const roles: {
     value: UserRole;
@@ -20,13 +29,13 @@ export function RoleSwitcher() {
     description: string;
   }[] = [
     {
-      value: "farmer",
+      value: "FARMER",
       label: "Farmer",
       icon: "🌾",
       description: "Record harvests, tokenize crops, apply for loans",
     },
     {
-      value: "buyer",
+      value: "BUYER",
       label: "Buyer",
       icon: "🏢",
       description: "Browse crops, verify quality, track supply chain",

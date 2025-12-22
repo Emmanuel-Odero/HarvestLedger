@@ -6,13 +6,14 @@
 
 "use client";
 
-import { useScenario } from "@/lib/user-journey-context";
+import { useScenario, useUserJourney } from "@/lib/user-journey-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export function ScenarioProgress() {
-  const { activeScenario, completeStep } = useScenario();
+  const { activeScenario } = useScenario();
+  const { completeStep } = useUserJourney();
 
   if (!activeScenario) {
     return null;
@@ -80,14 +81,6 @@ export function ScenarioProgress() {
                     <p className="text-sm text-gray-600 mb-2">
                       {step.description}
                     </p>
-
-                    {step.tooltip && isActive && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
-                        <p className="text-xs text-yellow-800">
-                          💡 <strong>Tip:</strong> {step.tooltip}
-                        </p>
-                      </div>
-                    )}
 
                     {isActive && !isCompleted && (
                       <Button

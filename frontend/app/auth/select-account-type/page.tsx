@@ -1,58 +1,68 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useMutation } from '@apollo/client'
-import { useAuth } from '@/lib/auth-context'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { UPDATE_USER_ROLE } from '@/lib/graphql/auth'
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMutation } from "@apollo/client";
+import { useAuth } from "@/lib/auth-context";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { UPDATE_USER_ROLE } from "@/lib/graphql/auth";
 
-type UserRole = 'FARMER' | 'BUYER'
+type UserRole = "FARMER" | "BUYER";
 
-export default function SelectAccountTypePage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { user, refreshUser } = useAuth()
-  
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
-  const [updateUserRole] = useMutation(UPDATE_USER_ROLE)
-  
-  const email = searchParams.get('email') || user?.email
+function SelectAccountTypeForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user, refreshUser } = useAuth();
+
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [updateUserRole] = useMutation(UPDATE_USER_ROLE);
+
+  const email = searchParams.get("email") || user?.email;
 
   const handleRoleSelect = (role: UserRole) => {
-    setSelectedRole(role)
-  }
+    setSelectedRole(role);
+  };
 
   const handleContinue = async () => {
-    if (!selectedRole) return
-    
-    setLoading(true)
-    setError(null)
-    
+    if (!selectedRole) return;
+
+    setLoading(true);
+    setError(null);
+
     try {
       const { data } = await updateUserRole({
         variables: {
-          role: selectedRole
-        }
-      })
-      
+          role: selectedRole,
+        },
+      });
+
       if (data?.updateUserRole?.success) {
-        await refreshUser()
-        router.push(`/profile?setup=true&email=${encodeURIComponent(email || '')}`)
+        await refreshUser();
+        router.push(
+          `/profile?setup=true&email=${encodeURIComponent(email || "")}`
+        );
       } else {
-        setError(data?.updateUserRole?.message || 'Failed to update account type')
+        setError(
+          data?.updateUserRole?.message || "Failed to update account type"
+        );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
@@ -62,7 +72,8 @@ export default function SelectAccountTypePage() {
             Choose Your Account Type
           </h1>
           <p className="text-gray-600 mb-4">
-            Select the account type that best describes your role in the agricultural ecosystem
+            Select the account type that best describes your role in the
+            agricultural ecosystem
           </p>
           {email && (
             <Badge variant="secondary" className="mb-4">
@@ -78,19 +89,20 @@ export default function SelectAccountTypePage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card 
+          <Card
             className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-              selectedRole === 'FARMER' 
-                ? 'ring-2 ring-green-500 bg-green-50' 
-                : 'hover:bg-gray-50'
+              selectedRole === "FARMER"
+                ? "ring-2 ring-green-500 bg-green-50"
+                : "hover:bg-gray-50"
             }`}
-            onClick={() => handleRoleSelect('FARMER')}
+            onClick={() => handleRoleSelect("FARMER")}
           >
             <CardHeader className="text-center">
               <div className="text-4xl mb-4">🌾</div>
               <CardTitle className="text-xl">Farmer</CardTitle>
               <CardDescription>
-                I grow crops and want to record harvests, tokenize products, and access financing
+                I grow crops and want to record harvests, tokenize products, and
+                access financing
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -119,19 +131,20 @@ export default function SelectAccountTypePage() {
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-              selectedRole === 'BUYER' 
-                ? 'ring-2 ring-blue-500 bg-blue-50' 
-                : 'hover:bg-gray-50'
+              selectedRole === "BUYER"
+                ? "ring-2 ring-blue-500 bg-blue-50"
+                : "hover:bg-gray-50"
             }`}
-            onClick={() => handleRoleSelect('BUYER')}
+            onClick={() => handleRoleSelect("BUYER")}
           >
             <CardHeader className="text-center">
               <div className="text-4xl mb-4">🏢</div>
               <CardTitle className="text-xl">Buyer</CardTitle>
               <CardDescription>
-                I purchase agricultural products and want transparency in the supply chain
+                I purchase agricultural products and want transparency in the
+                supply chain
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -166,14 +179,16 @@ export default function SelectAccountTypePage() {
             onClick={handleContinue}
             disabled={!selectedRole || loading}
             className={`px-8 py-3 text-lg font-semibold ${
-              selectedRole === 'FARMER' 
-                ? 'bg-green-600 hover:bg-green-700' 
-                : selectedRole === 'BUYER'
-                ? 'bg-blue-600 hover:bg-blue-700'
-                : 'bg-gray-400'
+              selectedRole === "FARMER"
+                ? "bg-green-600 hover:bg-green-700"
+                : selectedRole === "BUYER"
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-400"
             }`}
           >
-            {loading ? 'Setting up...' : `Continue as ${selectedRole || 'Select Account Type'}`}
+            {loading
+              ? "Setting up..."
+              : `Continue as ${selectedRole || "Select Account Type"}`}
           </Button>
         </div>
 
@@ -184,5 +199,22 @@ export default function SelectAccountTypePage() {
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+export default function SelectAccountTypePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <SelectAccountTypeForm />
+    </Suspense>
+  );
 }

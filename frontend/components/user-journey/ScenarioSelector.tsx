@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const SCENARIO_ICONS: Record<string, string> = {
+  "farmer-onboarding": "🌾",
   harvest_recording: "📝",
   crop_tokenization: "🪙",
   marketplace_browsing: "🛒",
@@ -43,7 +44,7 @@ export function ScenarioSelector() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-3xl">
-                {SCENARIO_ICONS[activeScenario.type]}
+                {SCENARIO_ICONS[activeScenario.id] || "📝"}
               </div>
               <div>
                 <CardTitle>{activeScenario.title}</CardTitle>
@@ -97,12 +98,12 @@ export function ScenarioSelector() {
             <Card
               key={scenario.id}
               className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-blue-300"
-              onClick={() => startScenario(scenario.type)}
+              onClick={() => startScenario(scenario.id)}
             >
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="text-4xl">
-                    {SCENARIO_ICONS[scenario.type]}
+                    {SCENARIO_ICONS[scenario.id] || "📝"}
                   </div>
                   <div className="flex-1">
                     <h4 className="font-semibold mb-1">{scenario.title}</h4>
@@ -114,7 +115,7 @@ export function ScenarioSelector() {
                         {scenario.steps.length} steps
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        ~{scenario.estimatedTime} min
+                        ~5 min
                       </Badge>
                     </div>
                   </div>

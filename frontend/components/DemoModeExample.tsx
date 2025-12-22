@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export function DemoModeExample() {
-  const { isDemoMode, enableDemoMode, disableDemoMode, config } = useDemoMode();
+  const { isDemoMode, setDemoMode } = useDemoMode();
 
   // Get the environment variable value
   const envDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
@@ -63,15 +63,9 @@ export function DemoModeExample() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Simulate Latency:</span>
+              <span>Environment:</span>
               <span className="font-medium">
-                {config.simulateLatency ? "Yes" : "No"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Error Rate:</span>
-              <span className="font-medium">
-                {(config.errorRate * 100).toFixed(1)}%
+                {envDemoMode ? "Demo Environment" : "Production Environment"}
               </span>
             </div>
           </div>
@@ -80,7 +74,7 @@ export function DemoModeExample() {
         {/* Toggle Controls */}
         <div className="flex gap-2">
           <Button
-            onClick={enableDemoMode}
+            onClick={() => setDemoMode(true)}
             disabled={isDemoMode}
             variant={isDemoMode ? "outline" : "default"}
             className="flex-1"
@@ -88,7 +82,7 @@ export function DemoModeExample() {
             Enable Demo Mode
           </Button>
           <Button
-            onClick={disableDemoMode}
+            onClick={() => setDemoMode(false)}
             disabled={!isDemoMode}
             variant={!isDemoMode ? "outline" : "default"}
             className="flex-1"
