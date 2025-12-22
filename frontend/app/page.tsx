@@ -64,6 +64,12 @@ export default function LandingPage() {
             >
               Blockchain
             </a>
+            <Link
+              href="/pitch-deck"
+              className="text-gray-600 hover:text-emerald-600 transition-colors font-medium"
+            >
+              Pitch Deck
+            </Link>
             <a
               href="#testimonials"
               className="text-gray-600 hover:text-emerald-600 transition-colors"
