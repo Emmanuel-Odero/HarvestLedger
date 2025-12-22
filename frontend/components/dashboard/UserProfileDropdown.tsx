@@ -24,10 +24,10 @@ interface UserProfileDropdownProps {
     email?: string;
     name?: string;
     fullName?: string;
-    walletAddress: string;
+    walletAddress?: string;
     hederaAccountId?: string;
     role: string;
-    isEmailVerified: boolean;
+    isEmailVerified?: boolean;
   };
   onLogout: () => void;
 }
