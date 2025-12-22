@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // output: "standalone", // Commented out for Vercel deployment
   // Move serverComponentsExternalPackages to top level for Next.js 16
   serverExternalPackages: ["@meshsdk/core"],
   // Empty turbopack config to silence the warning
